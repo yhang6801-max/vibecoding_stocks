@@ -1,0 +1,49 @@
+{
+  "primary": "https://fred.stlouisfed.org/series/NIKKEI225",
+  "method": "Preserved project daily close snapshot; missing/non-trading-day filtering follows original project.",
+  "measure": "daily closing price index",
+  "dividends_included": false,
+  "license_note": "Data attribution is retained. MIT applies to original code and documentation, not third-party data rights. No fresh data download is performed by the examples.",
+  "snapshot": {
+    "file": "daily.csv",
+    "sha256": "a5359003c829017c1624ea5380960d8314c60ff6872f12740b25df3f4a9d73ee",
+    "bytes": 209401,
+    "rows": 10021,
+    "first": {
+      "date": "1985-01-04",
+      "close": 11558.06
+    },
+    "last": {
+      "date": "2025-10-31",
+      "close": 52411.34
+    },
+    "minimum": {
+      "date": "2009-03-10",
+      "close": 7054.98
+    },
+    "maximum": {
+      "date": "2025-10-31",
+      "close": 52411.34
+    },
+    "copied_byte_for_byte_from_original_project": true
+  },
+  "retrieved_at_utc": null,
+  "retrieval_evidence": {
+    "status": "Original network retrieval timestamp and raw HTTP response were not retained. File modification time is not used as a download date.",
+    "original_metadata_source": "FRED NIKKEI225 daily observations",
+    "original_project_review_date": "2026-10-17",
+    "review_date_is_not_retrieval_date": true
+  },
+  "original_download_endpoint": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=NIKKEI225&cosd=1984-12-20&coed=2025-10-31",
+  "processing": {
+    "range_start": "1985-01-04",
+    "range_end": "2025-10-31",
+    "missing_values": "FRED empty and dot observations omitted by the original acquisition script.",
+    "nontrading_dates": "Original script removed documented Tokyo holidays and the 2020-10-01 exchange outage when FRED carried the prior close forward. The preserved snapshot is reused offline; this repository does not redownload or independently revalidate the historical source response.",
+    "independent_second_source_check": "Not retained; do not describe this snapshot as independently cross-checked."
+  },
+  "applicable_conditions": [
+    "https://fred.stlouisfed.org/legal/terms-of-use",
+    "https://indexes.nikkei.co.jp/en/nkave/index/licensing"
+  ]
+}

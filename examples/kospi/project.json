@@ -1,0 +1,720 @@
+{
+  "name": "KOSPI 1990—2026 电影感成片",
+  "instrument": {
+    "name": "韩国综合股价指数",
+    "symbol": "KOSPI",
+    "unit": "点",
+    "measure": "daily_close_price_index",
+    "dividends_included": false
+  },
+  "video": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "duration": 120,
+    "frames": 3600
+  },
+  "chart": {
+    "window_months": 96,
+    "y_min": 0,
+    "y_max": 1500,
+    "phase_lookback": 95,
+    "phase_lookback_unit": "trading_samples",
+    "phase_definition": "current close compared with the close 95 observations earlier",
+    "phase_insufficient_history": "omit",
+    "axis_transitions": [
+      {
+        "start": 40,
+        "end": 41,
+        "from": 1500,
+        "to": 2500
+      },
+      {
+        "start": 60.1,
+        "end": 60.9,
+        "from": 2500,
+        "to": 3500
+      },
+      {
+        "start": 97.1,
+        "end": 97.9,
+        "from": 3500,
+        "to": 5000
+      },
+      {
+        "start": 104.1,
+        "end": 104.9,
+        "from": 5000,
+        "to": 10000
+      }
+    ],
+    "window_transition": {
+      "start": 66,
+      "end": 72,
+      "from_months": 96,
+      "to_months": 24
+    },
+    "overview_transition": {
+      "start": 117,
+      "end": 120
+    }
+  },
+  "full": {
+    "duration": 120,
+    "demo_start": 0,
+    "data_start": "1990-01-04",
+    "data_end": "2026-10-16"
+  },
+  "style": {
+    "background": "deep navy black",
+    "line": "gold and warm white",
+    "projection": "fixed perspective",
+    "text_and_minimap": "flat",
+    "narration": false
+  },
+  "motion": {
+    "version": 2,
+    "reveal": "projected_polyline_arclength",
+    "ramp_seconds": 0.24,
+    "label_fade_seconds": 0.25,
+    "camera_easing": "quintic"
+  },
+  "particles": {
+    "seed": 20261018,
+    "rate": 170,
+    "low_rate": 65,
+    "lifetime_min": 0.8,
+    "lifetime_max": 1.6,
+    "speed_world_min": 0.22,
+    "speed_world_max": 0.65,
+    "trail_seconds": 0.07
+  },
+  "events": [
+    {
+      "id": "F01",
+      "date": "1990-01-04",
+      "label": "从 1990 出发",
+      "arrival": 0,
+      "hold": 3,
+      "low": false
+    },
+    {
+      "id": "F02",
+      "date": "1994-11-08",
+      "label": "九十年代高位",
+      "arrival": 11,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F03",
+      "date": "1998-06-16",
+      "label": "全期最低收盘",
+      "arrival": 20,
+      "hold": 2,
+      "low": true
+    },
+    {
+      "id": "F04",
+      "date": "2000-01-04",
+      "label": "重返千点之上",
+      "arrival": 28,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F05",
+      "date": "2003-12-30",
+      "label": "修复与震荡",
+      "arrival": 41,
+      "hold": 0,
+      "low": false
+    },
+    {
+      "id": "F06",
+      "date": "2007-07-25",
+      "label": "收盘突破 2,000",
+      "arrival": 49,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F07",
+      "date": "2007-10-31",
+      "label": "危机前的高位",
+      "arrival": 52,
+      "hold": 0,
+      "low": false
+    },
+    {
+      "id": "F08",
+      "date": "2008-10-24",
+      "label": "金融危机中的低点",
+      "arrival": 55,
+      "hold": 2,
+      "low": true
+    },
+    {
+      "id": "F09",
+      "date": "2011-05-02",
+      "label": "再创新高",
+      "arrival": 60,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F10",
+      "date": "2018-01-29",
+      "label": "长期震荡后的高点",
+      "arrival": 65,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "E01",
+      "date": "2020-01-22",
+      "label": "急跌前参照",
+      "arrival": 72,
+      "hold": 2,
+      "low": false
+    },
+    {
+      "id": "E02",
+      "date": "2020-03-19",
+      "label": "2020 年阶段低点",
+      "arrival": 78,
+      "hold": 2,
+      "low": true
+    },
+    {
+      "id": "E03",
+      "date": "2021-01-07",
+      "label": "首次收于 3,000 之上",
+      "arrival": 88,
+      "hold": 2,
+      "low": false
+    },
+    {
+      "id": "E04",
+      "date": "2021-07-06",
+      "label": "2021 年最高收盘",
+      "arrival": 91,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F11",
+      "date": "2022-09-30",
+      "label": "阶段回撤",
+      "arrival": 97,
+      "hold": 1,
+      "low": true
+    },
+    {
+      "id": "F12",
+      "date": "2025-10-27",
+      "label": "收盘突破 4,000",
+      "arrival": 104,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F13",
+      "date": "2026-01-27",
+      "label": "收盘突破 5,000",
+      "arrival": 109,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F14",
+      "date": "2026-06-22",
+      "label": "全期最高收盘",
+      "arrival": 113,
+      "hold": 1,
+      "low": false
+    },
+    {
+      "id": "F15",
+      "date": "2026-10-16",
+      "label": "截至本片的最终收盘",
+      "arrival": 117,
+      "hold": 3,
+      "low": false
+    }
+  ],
+  "camera": {
+    "pullback_start": 117,
+    "pullback_end": 120,
+    "retain_same_data_projection": true
+  },
+  "audio": {
+    "narration": false,
+    "sample_rate": 48000,
+    "channels": 2,
+    "music_style": "cinematic instrumental, brisk pulse, restrained low end",
+    "cues": [
+      {
+        "time": 0,
+        "event_id": "F01",
+        "kind": "node_accent"
+      },
+      {
+        "time": 11,
+        "event_id": "F02",
+        "kind": "node_accent"
+      },
+      {
+        "time": 20,
+        "event_id": "F03",
+        "kind": "low_point_accent"
+      },
+      {
+        "time": 22,
+        "kind": "recovery_build"
+      },
+      {
+        "time": 28,
+        "event_id": "F04",
+        "kind": "node_accent"
+      },
+      {
+        "time": 41,
+        "event_id": "F05",
+        "kind": "node_accent"
+      },
+      {
+        "time": 49,
+        "event_id": "F06",
+        "kind": "node_accent"
+      },
+      {
+        "time": 52,
+        "event_id": "F07",
+        "kind": "node_accent"
+      },
+      {
+        "time": 55,
+        "event_id": "F08",
+        "kind": "low_point_accent"
+      },
+      {
+        "time": 57,
+        "kind": "recovery_build"
+      },
+      {
+        "time": 60,
+        "event_id": "F09",
+        "kind": "node_accent"
+      },
+      {
+        "time": 65,
+        "event_id": "F10",
+        "kind": "node_accent"
+      },
+      {
+        "time": 72,
+        "event_id": "E01",
+        "kind": "node_accent"
+      },
+      {
+        "time": 78,
+        "event_id": "E02",
+        "kind": "low_point_accent"
+      },
+      {
+        "time": 80,
+        "kind": "recovery_build"
+      },
+      {
+        "time": 88,
+        "event_id": "E03",
+        "kind": "node_accent"
+      },
+      {
+        "time": 91,
+        "event_id": "E04",
+        "kind": "node_accent"
+      },
+      {
+        "time": 97,
+        "event_id": "F11",
+        "kind": "low_point_accent"
+      },
+      {
+        "time": 98,
+        "kind": "recovery_build"
+      },
+      {
+        "time": 104,
+        "event_id": "F12",
+        "kind": "node_accent"
+      },
+      {
+        "time": 109,
+        "event_id": "F13",
+        "kind": "node_accent"
+      },
+      {
+        "time": 113,
+        "event_id": "F14",
+        "kind": "node_accent"
+      },
+      {
+        "time": 117,
+        "event_id": "F15",
+        "kind": "node_accent"
+      },
+      {
+        "time": 120,
+        "kind": "tail_complete"
+      }
+    ]
+  },
+  "data_file": "data/kospi_data.json",
+  "source_manifest": "data/source_manifest.json",
+  "verification": "data/verification.json",
+  "chapters": [
+    {
+      "start": 0,
+      "end": 22,
+      "number": 1,
+      "title": "九十年代的起伏"
+    },
+    {
+      "start": 22,
+      "end": 57,
+      "number": 2,
+      "title": "修复、突破与回撤"
+    },
+    {
+      "start": 57,
+      "end": 72,
+      "number": 3,
+      "title": "长期震荡与新高"
+    },
+    {
+      "start": 72,
+      "end": 92,
+      "number": 4,
+      "title": "急跌与突破"
+    },
+    {
+      "start": 92,
+      "end": 117,
+      "number": 5,
+      "title": "新高度与回落"
+    },
+    {
+      "start": 117,
+      "end": 120,
+      "number": 5,
+      "title": "三十六年的轨迹"
+    }
+  ],
+  "captions": [
+    {
+      "start": 0,
+      "end": 3,
+      "title": "从 1990 出发",
+      "sub": "1990.01.04 — 2026.10.16",
+      "caption": "从 928.82 点出发，走过三十六年的起伏。"
+    },
+    {
+      "start": 3,
+      "end": 11,
+      "title": "九十年代的起伏",
+      "sub": "九十年代初 · 起伏与修复",
+      "caption": "九十年代初，指数在起伏中修复。"
+    },
+    {
+      "start": 11,
+      "end": 12,
+      "title": "九十年代高位",
+      "sub": "1994.11.08 · 1,138.75 点",
+      "caption": "1994 年 11 月 8 日，收于 1,138.75 点。"
+    },
+    {
+      "start": 12,
+      "end": 20,
+      "title": "下行",
+      "sub": "从高位走向低谷",
+      "caption": "九十年代后期，指数经历深度回撤。"
+    },
+    {
+      "start": 20,
+      "end": 22,
+      "title": "280.00 点",
+      "sub": "较 1994.11.08 下跌 75.41%",
+      "caption": "1998 年 6 月 16 日，收于全期最低点 280.00。"
+    },
+    {
+      "start": 22,
+      "end": 28,
+      "title": "修复",
+      "sub": "重新走向 1,000 点",
+      "caption": "从低谷出发，指数逐步修复。"
+    },
+    {
+      "start": 28,
+      "end": 29,
+      "title": "重返千点之上",
+      "sub": "2000.01.04 · 1,059.04 点",
+      "caption": "进入新世纪，收盘重返千点之上。"
+    },
+    {
+      "start": 29,
+      "end": 41,
+      "title": "震荡与积累",
+      "sub": "2000 — 2003",
+      "caption": "日线起伏之中，新的周期逐渐展开。"
+    },
+    {
+      "start": 41,
+      "end": 49,
+      "title": "向 2,000 点推进",
+      "sub": "修复之后，再次突破",
+      "caption": "修复之后，指数向两千点推进。"
+    },
+    {
+      "start": 49,
+      "end": 50,
+      "title": "突破 2,000",
+      "sub": "2007.07.25 · 2,004.22 点",
+      "caption": "2007 年 7 月 25 日，收盘突破 2,000 点。"
+    },
+    {
+      "start": 50,
+      "end": 52,
+      "title": "继续走高",
+      "sub": "两千点之上的高位",
+      "caption": "突破两千点之后，指数继续走高。"
+    },
+    {
+      "start": 52,
+      "end": 55,
+      "title": "急转而下",
+      "sub": "全球金融危机时期",
+      "caption": "2008 年，指数出现急剧回撤。"
+    },
+    {
+      "start": 55,
+      "end": 57,
+      "title": "938.75 点",
+      "sub": "较 2007.10.31 下跌 54.54%",
+      "caption": "2008 年 10 月 24 日，收于 938.75 点。"
+    },
+    {
+      "start": 57,
+      "end": 60,
+      "title": "重新向上",
+      "sub": "从低点回升",
+      "caption": "市场修复，指数重新走向高位。"
+    },
+    {
+      "start": 60,
+      "end": 61,
+      "title": "再创新高",
+      "sub": "2011.05.02 · 2,228.96 点",
+      "caption": "2011 年 5 月 2 日，收于 2,228.96 点。"
+    },
+    {
+      "start": 61,
+      "end": 65,
+      "title": "长期震荡",
+      "sub": "2011 — 2018",
+      "caption": "横跨数年的震荡之后，指数再上台阶。"
+    },
+    {
+      "start": 65,
+      "end": 66,
+      "title": "2,598.19 点",
+      "sub": "2018.01.29",
+      "caption": "2018 年 1 月 29 日，收于 2,598.19 点。"
+    },
+    {
+      "start": 66,
+      "end": 72,
+      "title": "靠近 2020",
+      "sub": "2018 — 2020",
+      "caption": "高位回落之后，市场走近 2020 年。"
+    },
+    {
+      "start": 72,
+      "end": 74,
+      "title": "急跌与突破",
+      "sub": "2020.01 — 2021.07",
+      "caption": "从 2,267.25 点出发，走过一场急跌与反弹。"
+    },
+    {
+      "start": 74,
+      "end": 78,
+      "title": "急跌",
+      "sub": "较 2020.01.22 的变化",
+      "caption": "急跌，逼近 2020 年阶段低点。"
+    },
+    {
+      "start": 78,
+      "end": 80,
+      "title": "阶段低点",
+      "sub": "较 2020.01.22 下跌 35.71%",
+      "caption": "1,457.64 点，较 1 月 22 日下跌 35.71%。"
+    },
+    {
+      "start": 80,
+      "end": 88,
+      "title": "反弹",
+      "sub": "从低点走向新高",
+      "caption": "从阶段低点反弹，向 3,000 点靠近。"
+    },
+    {
+      "start": 88,
+      "end": 90,
+      "title": "突破 3,000",
+      "sub": "首次收于 3,000 点之上",
+      "caption": "2021 年 1 月 7 日，首次收于 3,000 点之上。"
+    },
+    {
+      "start": 90,
+      "end": 91,
+      "title": "继续走高",
+      "sub": "两千点之后的新台阶",
+      "caption": "突破三千点之后，指数继续上行。"
+    },
+    {
+      "start": 91,
+      "end": 92,
+      "title": "2021 年高位",
+      "sub": "3,305.21 点",
+      "caption": "2021 年 7 月 6 日，收于 3,305.21 点。"
+    },
+    {
+      "start": 92,
+      "end": 97,
+      "title": "再次回撤",
+      "sub": "从 2021 年高位回落",
+      "caption": "新高之后，指数再次经历回撤。"
+    },
+    {
+      "start": 97,
+      "end": 98,
+      "title": "2,155.49 点",
+      "sub": "较 2021.07.06 下跌 34.79%",
+      "caption": "2022 年 9 月 30 日，收于 2,155.49 点。"
+    },
+    {
+      "start": 98,
+      "end": 104,
+      "title": "修复与新高度",
+      "sub": "向 4,000 点推进",
+      "caption": "指数再次修复，并走向新的高度。"
+    },
+    {
+      "start": 104,
+      "end": 105,
+      "title": "突破 4,000",
+      "sub": "2025.10.27 · 4,042.83 点",
+      "caption": "2025 年 10 月 27 日，收盘突破 4,000 点。"
+    },
+    {
+      "start": 105,
+      "end": 109,
+      "title": "继续向上",
+      "sub": "2025 — 2026",
+      "caption": "进入 2026 年，指数继续上行。"
+    },
+    {
+      "start": 109,
+      "end": 110,
+      "title": "突破 5,000",
+      "sub": "2026.01.27 · 5,084.85 点",
+      "caption": "2026 年 1 月 27 日，收盘突破 5,000 点。"
+    },
+    {
+      "start": 110,
+      "end": 113,
+      "title": "新的高度",
+      "sub": "2026 年上半年",
+      "caption": "指数快速上行，走向本片覆盖期间的最高收盘。"
+    },
+    {
+      "start": 113,
+      "end": 114,
+      "title": "9,114.55 点",
+      "sub": "1990—2026 全期最高收盘",
+      "caption": "2026 年 6 月 22 日，收于全期最高点 9,114.55。"
+    },
+    {
+      "start": 114,
+      "end": 117,
+      "title": "高点之后",
+      "sub": "回落至 2026.10.16",
+      "caption": "高点之后，指数再次回落。"
+    },
+    {
+      "start": 117,
+      "end": 120,
+      "title": "三十六年的轨迹",
+      "sub": "1990.01.04 — 2026.10.16",
+      "caption": "截至 2026.10.16：5,668.05 点，较 6 月高点回落 37.81%。"
+    }
+  ],
+  "contexts": [
+    {
+      "date": "1997-12-04",
+      "until_date": "1998-06-16",
+      "text": "历史背景 · 1997.12.04 IMF 批准韩国备用信贷",
+      "source": "https://www.imf.org/en/News/Articles/2015/09/14/01/49/pr9755"
+    },
+    {
+      "date": "2008-09-15",
+      "until_date": "2008-10-24",
+      "text": "历史背景 · 2008.09—10 全球金融危机加剧",
+      "source": "https://www.bis.org/publications/ii-3"
+    },
+    {
+      "date": "2020-03-11",
+      "until_date": "2020-03-19",
+      "text": "历史背景 · 2020.03.11 WHO 将 COVID-19 定性为大流行",
+      "source": "https://www.who.int/news/item/27-04-2020-who-timeline---covid-19"
+    }
+  ],
+  "preset": "cinematic120",
+  "data": "daily.csv",
+  "data_source": "Naver Finance / FinanceDataReader KRX cache",
+  "display": {
+    "title": "韩股36年走势",
+    "subtitle": "起伏、突破与回撤",
+    "instrument_label": "韩国综合股价指数",
+    "source": "Naver Finance / FinanceDataReader KRX cache",
+    "range_label": "1990—2026",
+    "ending": "三十六年的轨迹",
+    "unit": "点"
+  },
+  "comparisons": {
+    "demo_reference_date": "2020-01-22",
+    "threshold": 3000,
+    "threshold_date": "2021-01-07"
+  },
+  "publishing": {
+    "title": "2分钟看完韩股36年",
+    "description": "从1990年的起点，到1998年的低谷，再到突破与回撤。用2分钟回看韩国综合股价指数（KOSPI）36年的走势，看见一条曲线背后的市场沉浮。\n\n数据区间：1990年1月4日—2026年10月16日。展示指数日收盘点位，不含分红再投资。\n\n#韩国股市 #KOSPI #股市历史 #数据可视化 #财经科普",
+    "cover_lines": [
+      "韩股",
+      "36年"
+    ],
+    "cover_subtitle": "2分钟回看股市沉浮",
+    "topics": [
+      "韩国股市",
+      "KOSPI",
+      "股市历史",
+      "数据可视化",
+      "财经科普"
+    ]
+  },
+  "render": {
+    "workers": 3,
+    "chunk_frames": 300,
+    "content_scale": 1.0
+  }
+}

@@ -1,0 +1,44 @@
+# Reproducible outputs and local work
+/output/
+/projects/
+**/output/
+**/audio_output/
+**/decoded_frames/
+**/decoded_sequences/
+**/chunks/
+**/cache/
+**/.cache/
+**/recordings/
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.m4a
+*.aac
+*.zip
+*.log
+*.jsonl
+
+# Python / editors
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
+
+# Credentials and machine-local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+local.settings.json

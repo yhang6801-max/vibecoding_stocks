@@ -1,0 +1,64 @@
+{
+  "primary": "https://api.finance.naver.com/siseJson.naver?symbol=KOSPI&requestType=1&startTime=19900104&endTime=20261016&timeframe=day",
+  "secondary": "https://github.com/FinanceData/fdr_krx_data_cache/tree/1000fb25a27e6b0e8d899048ac392da22139c996/data/index/year_ks11",
+  "cross_checked_rows": 7924,
+  "single_source_rows": 1565,
+  "measure": "daily closing price index",
+  "dividends_included": false,
+  "license_note": "Data attribution is retained. MIT applies to original code and documentation, not third-party data rights. No fresh data download is performed by the examples.",
+  "snapshot": {
+    "file": "daily.csv",
+    "sha256": "561fdbdea4bb8d24bef89383053bb457b214058a46faf29f006f3f338fbf2d71",
+    "bytes": 185680,
+    "rows": 9489,
+    "first": {
+      "date": "1990-01-04",
+      "close": 928.82
+    },
+    "last": {
+      "date": "2026-10-16",
+      "close": 5668.05
+    },
+    "minimum": {
+      "date": "1998-06-16",
+      "close": 280.0
+    },
+    "maximum": {
+      "date": "2026-06-22",
+      "close": 9114.55
+    },
+    "copied_byte_for_byte_from_original_project": true
+  },
+  "retrieved_at_utc": "2026-10-18T09:40:37.896643+00:00",
+  "retrieval_evidence": {
+    "record": "Original project full-validation source manifest",
+    "primary_response_sha256": "da5f8b424ad50076bff10c543a0e56c84471ef045e8d4d251d75c5b2dce288d4",
+    "primary_response_bytes": 603530,
+    "primary_http_status": 200,
+    "validation_record_created_at_utc": "2026-10-18T12:23:58.710549+00:00"
+  },
+  "secondary_snapshot": {
+    "repository": "FinanceData/fdr_krx_data_cache",
+    "commit": "1000fb25a27e6b0e8d899048ac392da22139c996",
+    "annual_files": 32,
+    "first_fetched_at_utc": "2026-10-18T12:17:57.327Z",
+    "last_fetched_at_utc": "2026-10-18T12:20:51.033Z",
+    "all_git_blobs_verified_in_original_project": true
+  },
+  "processing": "Preserved original daily closing prices; all 9489 rows matched the original Naver response exactly. No fabricated dates, gap fills, or price interpolation in CSV.",
+  "cross_check_scope": {
+    "matched_common_rows": 7924,
+    "mismatched_common_rows": 0,
+    "single_source_rows": 1565,
+    "single_source_early_period": {
+      "start": "1990-01-04",
+      "end": "1995-04-29",
+      "rows": 1564
+    },
+    "single_source_isolated_date": "2000-05-01"
+  },
+  "applicable_conditions": [
+    "https://finance.naver.com/",
+    "https://global.krx.co.kr/"
+  ]
+}

@@ -1,0 +1,4 @@
+# Preserve the exact source snapshots and their published SHA256 digests.
+examples/**/daily.csv -text
+*.png binary
+*.jpg binary
