@@ -54,6 +54,10 @@ def nice_upper(value):
     return max(step, math.ceil(value * 1.03 / step) * step)
 
 
+def audio_enabled(config):
+    return config["preset"] == "cinematic120" or config.get("audio", {}).get("score") == "energetic220"
+
+
 def load_project(path: Path):
     path = path.expanduser().resolve(strict=True)
     config = copy.deepcopy(read_json(path))
@@ -65,6 +69,8 @@ def load_project(path: Path):
     if any(config.get("video", {}).get(key, value) != value for key, value in expected.items()):
         raise ValueError(f"{preset} 使用固定规格 {expected}")
     config["video"] = expected
+    if preset == "classic220" and config.get("audio", {}).get("score") not in (None, "energetic220"):
+        raise ValueError("classic220 audio.score 仅支持 energetic220 或省略为静音")
     csv_path = (path.parent / config["data"]).resolve(strict=True)
     rows = daily_csv(csv_path)
     by_date = {row["date"]: row["close"] for row in rows}
@@ -153,6 +159,9 @@ def load_project(path: Path):
 def prepare(path: Path, output: Path):
     project, config, rows, csv_path = load_project(path)
     output = output.expanduser().resolve()
+    for key in ("text_file", "number_file"):
+        if config.get("fonts", {}).get(key):
+            config["fonts"][key] = str((project.parent / config["fonts"][key]).resolve(strict=True))
     work = output / "prepared"
     work.mkdir(parents=True, exist_ok=True)
     write_json(work / "project.json", config)

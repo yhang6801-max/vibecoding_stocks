@@ -2,7 +2,7 @@
 
 ## 1. 安装与检查
 
-首版面向 Windows，使用 PowerShell 7、Python 3.11+ 和 FFmpeg。下载 [PowerShell](https://github.com/PowerShell/PowerShell/releases)、[Python](https://www.python.org/downloads/windows/) 与适合 Windows 的 [FFmpeg 构建](https://ffmpeg.org/download.html#build-windows)，将可执行文件加入 PATH。FFmpeg 构建至少需要 H.264 `libx264`、AAC 和 `loudnorm`。安装了 NVIDIA 驱动并不代表 NVENC 一定可用，工具会实际编码探测。
+以下命令用于 Windows；Mac 请阅读 [Mac 指南](mac.md)。Windows 使用 PowerShell 7、Python 3.11+ 和 FFmpeg。下载 [PowerShell](https://github.com/PowerShell/PowerShell/releases)、[Python](https://www.python.org/downloads/windows/) 与适合 Windows 的 [FFmpeg 构建](https://ffmpeg.org/download.html#build-windows)，将可执行文件加入 PATH。FFmpeg 构建至少需要 H.264 `libx264`、AAC 和 `loudnorm`。安装了 NVIDIA 驱动并不代表 NVENC 一定可用，工具会实际编码探测。
 
 在仓库根目录运行：
 
@@ -19,7 +19,7 @@ $env:FFMPEG_BIN = 'C:\Tools\ffmpeg\bin\ffmpeg.exe'
 .\.venv\Scripts\python.exe tools/stock_video.py doctor
 ```
 
-工具按显式 `--ffmpeg`、`FFMPEG_BIN`、PATH 的顺序查找。当前媒体检查直接调用 FFmpeg，不要求另装 `ffprobe`。
+工具按显式 `--ffmpeg`、`FFMPEG_BIN`、PATH 的顺序查找。媒体信息由同包的 FFprobe 输出 JSON；FFmpeg 负责完整解码检查。
 
 可先运行 8 项输入契约测试，不渲染视频：
 

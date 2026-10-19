@@ -5,10 +5,21 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+#if SKIA
+using StockVideo.Drawing;
+using Color = System.Drawing.Color;
+using ColorTranslator = System.Drawing.ColorTranslator;
+using Point = System.Drawing.Point;
+using PointF = System.Drawing.PointF;
+using SizeF = System.Drawing.SizeF;
+using Rectangle = System.Drawing.Rectangle;
+using RectangleF = System.Drawing.RectangleF;
+#else
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+#endif
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -298,6 +309,10 @@ public static class KospiPublishCovers
     static void Footer(Graphics g, bool portrait)
     {
         float x = portrait ? 86 : 108, y = portrait ? 1250 : 930;
+#if SKIA
+        // PingFang has taller line metrics; preserve the required bottom inset.
+        y -= 8;
+#endif
         Line(g, new PointF(x, y), new PointF(Width - x, y), Alpha(Muted, 55), .8f);
         Text(g, InstrumentName, x, y + 22, Fitted(g, InstrumentName, (Width - x * 2) * .68f, portrait ? 20 : 22), Alpha(White, 218));
         Text(g, "日收盘 · " + Unit, Width - x, y + 25, portrait ? 17 : 19, Muted, false, false, 1);
@@ -374,11 +389,17 @@ public static class KospiPublishCovers
         Directory.CreateDirectory(directory); Directory.CreateDirectory(Path.Combine(directory, "qa"));
         Cover(directory, false); Cover(directory, true); Preview(directory);
         var json = new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+#if SKIA
+        var fontNames = new[] { Font.TextFile ?? Font.TextFamily, Font.NumberFile ?? Font.NumberFamily };
+#else
+        var fontNames = new[] { "Microsoft YaHei UI", "Bahnschrift" };
+#endif
         var manifest = new { series = new { file = Path.GetFileName(data), sha256 = Hash(data), count = Daily.Count,
             first = Daily[0].Date.ToString("yyyy-MM-dd"), last = Daily[Daily.Count - 1].Date.ToString("yyyy-MM-dd"),
-            measure = "daily_close_price_index", dividends_included = false },
+            measure = instrument.TryGetProperty("measure", out var measure) ? measure.GetString() : "daily_close",
+            dividends_included = instrument.TryGetProperty("dividends_included", out var dividends) && dividends.GetBoolean() },
             images = ImageRecords, text_bounds = TextRecords, minimum_text_inset = .07,
-            downsample = "2x supersampling, bicubic", fonts = new[] { "Microsoft YaHei UI", "Bahnschrift" } };
+            downsample = "2x supersampling, bicubic", fonts = fontNames };
         File.WriteAllText(Path.Combine(directory, "render_manifest.json"), JsonSerializer.Serialize(manifest, json), new System.Text.UTF8Encoding(false));
         foreach (string name in new[] { "cover_landscape_4x3.png", "cover_portrait_3x4.png" })
         {

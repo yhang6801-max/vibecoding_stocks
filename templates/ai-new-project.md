@@ -13,7 +13,7 @@
 开始与截止：{{日期区间}}。叙事主线：{{起点、转折、终点}}。
 已核实的背景与事件来源：{{事实、日期、URL列表}}。
 
-先阅读 README、docs/new-project.md、docs/visual-spec.md、templates/production-template.md 和所选示例配置。沿用现有 Python、PowerShell、System.Drawing、FFmpeg 制作链，不随意重写渲染器。
+先阅读 AGENT.md、README、docs/new-project.md、docs/visual-spec.md、templates/production-template.md 和所选示例配置。沿用现有 Python、共享 C# 渲染器和 FFmpeg 制作链；Mac 使用 SkiaSharp，Windows 可使用 PowerShell/System.Drawing，不随意重写渲染器。
 
 请先检查 CSV 的 date,close、真实交易日、正数、升序和重复日期，列出首尾、样本数、区间最低最高、长缺口及待核问题。不要造价、补造交易日、用少量锚点代替日线，或移动端点制造突破。
 

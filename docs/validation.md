@@ -70,3 +70,115 @@ AAPL 输入来自 [Plotly 的固定版本 CSV](https://github.com/plotly/dataset
 README 的 `kospi-video.png` 是发布配置第 3599 帧的 CPU 片尾预览解码帧，`nikkei-video.png` 是 29.6 秒 CPU 预览的解码帧；两者均来自实际编码后的媒体，不冒充完整视频的解码帧。`kospi-covers.jpg` 是实际生成的横竖封面对照图。
 
 两张全历史 SVG 根据完整真实 CSV 重绘，是静态参考，不证明动画停留或镜头衔接。完整重制另审阅其实际 MP4 解码图，文件类型和验证范围分别标明。
+
+## Mac / SkiaSharp 分支实测（2026-10-19）
+
+本节是 `codex/mac` 新增的实际运行记录，与上文 Windows 原记录分开。环境为 macOS 26.5.1 arm64、Python 3.14.4、NumPy 2.5.4、.NET SDK 8.0.408、SkiaSharp NuGet 3.119.1、FFmpeg/FFprobe 8.1。字体使用系统 PingFang SC、Helvetica Neue，涨跌符号通过字形回退补齐。媒体使用 CPU libx264；本次未测试 Windows 后端或 Linux。
+
+| 检查 | 结果 | 范围 |
+| --- | --- | --- |
+| .NET 构建与 doctor | 通过，0 编译警告/错误 | 字体、Skia 栅格画布、Python 依赖、FFmpeg/FFprobe 与实际编码探测 |
+| Python 测试 | 16 项通过 | 原 8 项输入契约，加缓存完整性、分段缺口、字体相对路径、后端选择、结构化媒体信息与拒绝错误产物 |
+| KOSPI 短预览 | 17/17 | 从 78 秒起 2 秒，60 帧；分别运行 1920×1080、960×540、480×270 |
+| 日经短预览 | 13/13 | 从 29.6 秒起 2 秒，60 帧；分别运行 1080×1920、540×960 |
+| 分辨率不改变报价 | 通过 | 两套模板各 60 帧，半分辨率与原尺寸的 frame/date/close/visible_last_date 逐项一致 |
+| 真实缓存复用 | 通过 | KOSPI 重复预览命中分段缓存，并重新完成成片验收；损坏、缺失及输入变更另有单元测试 |
+| 四张封面 | 通过 | 正确横竖尺寸，82 个文字框全部满足 7% 安全边距，单张小于 5 MiB；查看实际封面对照图 |
+| KOSPI 完整视频 | 19/19 | 120 秒、3600 帧、1920×1080、30 fps、有声；构建记录耗时 243.2 秒 |
+| 日经完整视频 | 14/14 | 220 秒、6600 帧、1080×1920、30 fps、静音；构建记录耗时 264.64 秒 |
+| 分段连接像素 | 通过 | KOSPI 12 段首尾共 24 帧，日经 22 段首尾共 44 帧，逐个与最终 MP4 对应解码帧的 MD5 比较 |
+| 连续完整观看 / 主观试听 | 未进行 | 只完成完整媒体解码、技术验收及所述关键帧目视检查 |
+
+全片构建曾同时运行，KOSPI 使用 2 个渲染进程、日经使用 1 个进程；记录耗时是这次机器负载下的观测，不能当作通用性能保证。KOSPI 成片音频实测综合响度 −16.04 LUFS、真峰值 −1.28 dBTP；日经无音轨。
+
+已目视实际全片解码出的 KOSPI 2007 年突破画面与最终全景，以及日经 2012 年事件与最终全景；另检查两套短预览和封面。KOSPI 末帧仍为 2026-10-16、5,668.05，保留 9,114.55 高点后回落及 280.00 最低收盘。日经最终报价状态为 2025-10-31、52,411.34。没有把这些抽样检查描述成逐帧视觉审阅。
+
+完整 MP4 的 SHA-256：
+
+- KOSPI：`760d2b7782e03906f1997f210425ef6168ca133531085a38a33b4635c92fce76`
+- 日经：`109a23507406498eb026c13ea93ffd1e6112c9bffedd727421a8818584506742`
+
+全片输入和源码指纹保存在各自 `build_record.json`。全片完成后，另修正了低清电影感背景渐变使用的逻辑画布尺寸、封面清单的真实字体和指标口径，并启用 NuGet 锁定恢复；这些修改没有改变正式画幅的分镜与时间轴。随后重新构建、运行 doctor、生成四张封面，以及 KOSPI 正式尺寸和 1/4 尺寸短预览。正式尺寸 60 帧的实际解码像素与修正前逐帧完全相同；未为上述最终修正重复渲染全片。
+
+主要运行命令（在仓库根目录）：
+
+```bash
+.venv/bin/python tools/stock_video.py doctor
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python tools/stock_video.py preview --project examples/kospi/project.json --start 78 --seconds 2 --scale 0.5 --encoder libx264 --output output/mac-kospi
+.venv/bin/python tools/stock_video.py preview --project examples/nikkei/project.json --start 29.6 --seconds 2 --scale 0.5 --encoder libx264 --output output/mac-nikkei
+.venv/bin/python tools/stock_video.py build --project examples/kospi/project.json --workers 2 --encoder libx264 --output output/mac-kospi-full
+.venv/bin/python tools/stock_video.py build --project examples/nikkei/project.json --workers 1 --encoder libx264 --output output/mac-nikkei-full
+.venv/bin/python tools/stock_video.py covers --project examples/kospi/project.json --output output/mac-kospi-covers
+.venv/bin/python tools/stock_video.py covers --project examples/nikkei/project.json --output output/mac-nikkei-covers
+```
+
+审阅页、媒体、清单和抽帧留在上述本地 output 目录，不提交到 Git。新标的、更换字体或新后端仍须单独验收。
+
+## 日经竖屏动效升级（2026-10-19）
+
+Mac / Skia 环境同上，源码改动集中于 classic_renderer.cs，设计及调研参考见 motion-design.md。全片位于 output/nikkei-v2-full/video.mp4：1080×1920、220 秒、6600 帧、静音，libx264 三进程渲染记录耗时 111.48 秒；14/14 技术检查通过。6600 帧的完整状态记录与前版 mac-nikkei-full 逐项一致。
+
+.NET 构建零警告、零错误；16 项 Python 测试通过；git diff --check 通过。短预览覆盖 0—4、27—33、204—210、217—220 秒，各 13/13。204—210 秒为原尺寸；其他使用半尺寸。最终增加的全景极值标签通过完整成片抽帧审阅。
+
+另运行 KOSPI 78—80 秒半尺寸预览（17/17）及两标的横竖封面生成，查看 KOSPI 预览和日经封面对照图。本次目视日经开场标题、1989 年峰值、2024 年突破、完整片的 2008 年下跌和最终全景。没有连续观看全片；静音版没有试听项目。Windows 后端未运行。
+
+highlights-19s.mp4 是完整视频中 0—4、27—32、204—210、216—220 秒的拼接预览，缩至 540×960，570 帧、19 秒，不能当作连续历史的完整版。
+
+分段衔接另完成解码像素核对：22 段首尾共 44 帧与最终 MP4 对应帧 MD5 全部一致，记录在 output/nikkei-v2-full/boundary_checks.json。
+
+## 日经累计历史修订（2026-10-19）
+
+按用户要求，将 classic220 主图从 12 个月移动窗口改为固定左端、逐步压缩历史；图形仍为真实日收盘折线。先运行 124—129 秒半尺寸预览及 216—220 秒原尺寸预览，均为 13/13，并查看 2008 年危机与末帧实际解码图。主图显示 1985 年起完整历史，片尾沿用相同坐标逻辑。
+
+.NET 构建 0 错误/0 警告；16 项 Python 测试通过；KOSPI 78—80 秒半尺寸回归 17/17；两标的四张封面重新生成。新增 tests/check_cumulative_render.py 供实际全片状态检查使用。连续观看完整视频仍需单独审阅；本版为静音。
+
+累计版完整成片位于 output/nikkei-cumulative-full/video.mp4：220 秒、6600 帧、1080×1920、静音，14/14 技术验收通过。累计历史专用检查通过全部 6600 帧：首日固定为 1985-01-04、横轴跨度不减、累计最高最低未被纵轴裁掉、最终为 2025-10-31。全部报价与上一版一致。另查看完整片 2000、2021 年和末帧实际解码图；未连续观看整片。
+
+附 timelapse-12x.mp4 为完整片的 12 倍速缩略预览，用于观察历史逐渐压缩；正式版播放速度仍为原来的 220 秒。
+
+累计版 22 段首尾共 44 帧与完整 MP4 的解码像素 MD5 全部一致，分段连接检查通过；结果保存在 boundary_checks.json。全部累计可见性检查保存在 cumulative_checks.json。
+
+## 仙女棒粒子短预览（2026-10-19）
+
+Mac Skia，202—214 秒，共 360 帧，分别制作半尺寸及原尺寸（1080×1920）预览，均 13/13。原尺寸预览位于 output/nikkei-sparkler-preview/preview.mp4，静音；未重制全片。360 帧的日期、报价及累计坐标状态与累计版全片相同。
+
+独立渲染 211.5—212.5 秒，跨过预览分段边界，与原预览对应 30 帧比较，解码 SSIM 为 0.998354；两次独立有损编码不能声称像素完全相同。随机粒子使用全局出生时间与固定种子。查看半尺寸和原尺寸事件喷发实际解码帧，未连续观看整段动画。
+
+.NET 构建 0 警告/0 错误；16 项 Python 测试通过；KOSPI 78—80 秒短回归 17/17；两标的四张封面重新生成。Windows 后端未运行。
+
+## 事件与转折强调短预览（2026-10-19）
+
+Mac Skia，半尺寸 202—216 秒和原尺寸 203—216 秒预览均 13/13。原尺寸共 390 帧，所有状态与累计版全片对应帧相同。查看事件金色爆发及回落青色提示的实际解码图；未连续观看整个预览，未重制全片。
+
+tests/check_impact_render.py 对实际产物检查通过：60 个提示（17 个配置事件、43 个经冷却筛选的转折）；分段提示表完全相同；17 个事件日期/时间与配置一致；转折日期和幅度与独立逐日 8% 阈值扫描匹配；提示出现帧为跨过确认日的第一帧，不回填过去。
+
+.NET 构建零错误/警告，16 项 Python 单测通过。两标的四张封面重新生成；KOSPI 短预览另做回归。声音仍未增加，Windows 未运行。
+
+## 片尾互动问题（2026-10-19）
+
+日经配置的 display.ending 改为“你觉得日本失去的30年\n回来了吗？”，两行展示。经典模板片尾文字区域调整为 910×142，保持原有 218—220 秒淡入，不遮挡主图、最终报价及来源。生成 214—220 秒原尺寸预览 output/nikkei-ending-question/preview.mp4，13/13 通过；目视实际末帧，两行文字完整。未重制全片。构建零错误/警告，16 项 Python 测试通过；两标的封面重生成，KOSPI 短预览回归另行执行。
+
+## 日经激情配乐完整版准备（2026-10-19）
+
+新增 energetic220 可选原创配乐，不改变 classic220 的固定时长或静音默认配置。新配置为 examples/nikkei/project-energetic.json，编排与调研边界见 energetic-score.md。
+
+半尺寸有声预览 203—216 秒通过 17/17；随后完善开场铺垫，0—4 秒有声预览通过 17/17。KOSPI 78—80 秒回归通过 17/17。20 项 Python 测试通过，包括静音默认值、有声配置保持数据和时间轴、未知配乐拒绝、要求音轨却缺失时验收失败。日经横竖封面重新生成。
+
+### 有声完整版实际结果
+
+output/nikkei-energetic-full/video.mp4：1080×1920、30 fps、220 秒、6600 帧，AAC 48 kHz 双声道，58.7 MB。构建记录耗时 150.13 秒（包括配乐合成、三进程画面渲染与封装；后续验收另计），19/19 通过。AAC 实测综合响度 −16.01 LUFS、真峰值 −1.63 dBTP，音频完整覆盖视频。
+
+全部 6600 帧的累计历史可见性检查通过，日期/报价/轴状态与累计版逐项一致。60 个视觉提示及 17 个配置事件的实际日期与时间核对通过。已目视完整 MP4 的 1989 年高点、2008 年下跌及最终提问画面。未连续观看全片，未完成主观全程试听；响度检查仅为技术验证。
+
+视频 SHA-256：`2e8d0260c7ed27ce34e67d30f0e5af316e138af91c48898bf297f40ead526c53`。音频分轨、母带、来源与编排清单保存在输出 audio/ 下；封面保存在 output/nikkei-energetic-covers/covers/。
+
+有声完整版的 22 段首尾共 44 帧与最终 MP4 对应解码像素 MD5 全部一致，分段衔接检查通过，记录在 boundary_checks.json。
+
+## 日经高清上传母版（2026-10-19）
+
+从原始场景重新渲染，classic220 CPU 编码调整为 libx264 CRF 14 / slow，原版为 CRF 18 / fast。新成片 `output/nikkei-hq-full/video.mp4` 为 1080×1920、30 fps、220 秒、6600 帧，79,476,446 字节，保留原配乐。全片完整解码及技术验收 19/19；6600 帧累计历史检查通过，全部状态与之前有声版完全一致；60 个提示和 17 个事件时间一致。
+
+.NET 编译零警告/错误，20 项 Python 测试通过；日经 205—208 秒原尺寸有声预览与 KOSPI 78—79 秒半尺寸回归均 17/17；两套横竖封面生成成功。查看 206 秒原版与新版实际解码局部对比，原版主要文字与走势已清楚，新版属于降低压缩损失，不能声称清晰度倍增。未连续观看、全程主观试听或验证抖音二次压缩后的效果。
+
+构建耗时 167.27 秒；SHA-256：`03bb3cef5def72798d6920b21f6ec24846beb7fb259164e2c6b19b31ee61452c`。

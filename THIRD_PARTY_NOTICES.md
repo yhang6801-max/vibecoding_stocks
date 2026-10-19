@@ -19,7 +19,8 @@ CSV 是制作时留存的复现快照，不是实时行情服务。具体源地�
 
 - 微软雅黑、Bahnschrift 由使用者的 Windows 系统提供，仓库不包含字体文件。字体适用 Windows 及字体自身的许可条款。
 - [PowerShell](https://github.com/PowerShell/PowerShell)、[Python](https://www.python.org/)、[NumPy](https://numpy.org/)、[FFmpeg](https://ffmpeg.org/legal.html) 作为外部依赖安装，不在此重新授权；FFmpeg 的实际许可取决于构建选项。
-- .NET `System.Drawing` 使用 Windows 图形环境，首版不承诺其他系统运行。
+- .NET `System.Drawing` 后端使用 Windows 图形环境。Mac 后端通过 NuGet 引入 [SkiaSharp](https://github.com/mono/SkiaSharp) 3.119.1（MIT），原生 Skia 及随包第三方组件适用其各自许可，发布二进制时保留随包 notices。
+- Mac 默认 PingFang SC、Helvetica Neue 由使用者系统提供，不随仓库分发。
 
 ## 配乐、参考与其他素材
 
@@ -34,3 +35,7 @@ CSV 是制作时留存的复现快照，不是实时行情服务。具体源地�
 - [WHO：COVID-19 时间线](https://www.who.int/news/item/27-04-2020-who-timeline---covid-19)
 
 引用用于核对背景事实；正文不据此自动认定某事件是某次价格变化的唯一原因。
+
+## 日经原创电子配乐
+
+`engines/energetic_audio.py` 及其生成的 Forty Years / Momentum 为项目原创程序化合成配乐，沿用仓库 MIT 许可；未采样或混入第三方歌曲。调研链接只用于风格参考，未将其音乐录音纳入仓库或成片。详细编排、运行方法和检索边界见 docs/energetic-score.md。

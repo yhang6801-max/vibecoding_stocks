@@ -40,3 +40,18 @@ def choose_encoder(ffmpeg, requested="auto"):
         if available(encoder):
             return encoder
     raise RuntimeError(f"编码器实际预检失败（{', '.join(candidates)}），请使用包含 libx264 的完整 FFmpeg 或检查显卡驱动")
+
+
+def ffprobe_path(ffmpeg):
+    sibling = Path(ffmpeg).with_name('ffprobe.exe' if os.name == 'nt' else 'ffprobe')
+    candidate = os.environ.get('FFPROBE_BIN') or (str(sibling) if sibling.is_file() else shutil.which('ffprobe'))
+    if not candidate:
+        raise FileNotFoundError('需要 FFprobe（通常随 FFmpeg 安装），或设置 FFPROBE_BIN')
+    return Path(candidate).expanduser().resolve(strict=True)
+
+
+def probe_media(ffmpeg, video):
+    import json
+    result = run([ffprobe_path(ffmpeg), '-v', 'error', '-show_streams', '-show_format',
+                  '-of', 'json', video], capture_output=True, text=True, encoding='utf-8')
+    return json.loads(result.stdout)

@@ -7,16 +7,31 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Diagnostics;
+#if SKIA
+using StockVideo.Drawing;
+using Color = System.Drawing.Color;
+using ColorTranslator = System.Drawing.ColorTranslator;
+using Point = System.Drawing.Point;
+using PointF = System.Drawing.PointF;
+using SizeF = System.Drawing.SizeF;
+using Rectangle = System.Drawing.Rectangle;
+using RectangleF = System.Drawing.RectangleF;
+#else
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+#endif
 using System.Runtime.InteropServices;
 using System.Text.Json;
 
 public static class ReusableCinema
 {
-    const int W=1920,H=1080,SS=2;
+    const int W=1920,H=1080;
+    public static double RenderScale = 1;
+    static int SS => RenderScale < 1 ? 1 : 2;
+    static int OutputWidth => (int)Math.Round(W * RenderScale);
+    static int OutputHeight => (int)Math.Round(H * RenderScale);
     static int Fps,TotalFrames,Lookback;
     static double Duration;
     static double MaxPrice;
@@ -156,10 +171,10 @@ public static class ReusableCinema
     static Graphics Configure(Bitmap bitmap) {
         Graphics g=Graphics.FromImage(bitmap);g.SmoothingMode=SmoothingMode.AntiAlias;
         g.PixelOffsetMode=PixelOffsetMode.HighQuality;g.TextRenderingHint=TextRenderingHint.AntiAliasGridFit;
-        g.CompositingQuality=CompositingQuality.HighQuality;g.ScaleTransform(SS,SS);return g;
+        g.CompositingQuality=CompositingQuality.HighQuality;g.ScaleTransform((float)(SS*RenderScale),(float)(SS*RenderScale));return g;
     }
     static void BuildBackground() {
-        Background=new Bitmap(W*SS,H*SS,PixelFormat.Format32bppArgb);
+        Background=new Bitmap(OutputWidth*SS,OutputHeight*SS,PixelFormat.Format32bppArgb);
         using(Graphics g=Configure(Background)) {
             using(LinearGradientBrush b=new LinearGradientBrush(new Rectangle(0,0,W,H),Hex("050914"),Hex("050D1B"),35f))g.FillRectangle(b,0,0,W,H);
             Glow(g,1120,560,1050,600,Hex("1A3E79"),35);Glow(g,1230,510,690,330,Hex("245C98"),29);
@@ -547,7 +562,7 @@ public static class ReusableCinema
         Stopwatch profile=Stopwatch.StartNew();long previous=0;
         bool timing=Environment.GetEnvironmentVariable("STOCKS_PROFILE")=="1";
         Action<string> lap=label=>{if(timing){long now=profile.ElapsedMilliseconds;Console.WriteLine(label+": "+(now-previous)+" ms");previous=now;}};
-        using(Bitmap large=Background.Clone(new Rectangle(0,0,W*SS,H*SS),PixelFormat.Format32bppArgb)) {
+        using(Bitmap large=Background.Clone(new Rectangle(0,0,OutputWidth*SS,OutputHeight*SS),PixelFormat.Format32bppArgb)) {
             using(Graphics g=Configure(large)) {
                 lap("background");
                 GraphicsState saved=g.Save();g.SetClip(new RectangleF(90,286,1745,545),CombineMode.Intersect);
@@ -558,11 +573,11 @@ public static class ReusableCinema
                 Navigator(g,s);
                 lap("navigator");
             }
-            Bitmap final=new Bitmap(W,H,PixelFormat.Format32bppArgb);
+            Bitmap final=new Bitmap(OutputWidth,OutputHeight,PixelFormat.Format32bppArgb);
             using(Graphics g=Graphics.FromImage(final)) {
                 g.InterpolationMode=InterpolationMode.HighQualityBicubic;g.PixelOffsetMode=PixelOffsetMode.HighQuality;
                 g.CompositingQuality=CompositingQuality.HighQuality;g.CompositingMode=CompositingMode.SourceCopy;
-                g.DrawImage(large,new Rectangle(0,0,W,H),0,0,W*SS,H*SS,GraphicsUnit.Pixel);
+                g.DrawImage(large,new Rectangle(0,0,OutputWidth,OutputHeight),0,0,OutputWidth*SS,OutputHeight*SS,GraphicsUnit.Pixel);
                 lap("downsample");
             }
             return final;
@@ -592,7 +607,7 @@ public static class ReusableCinema
     static void Encode(State[] states,int first,int count,string ffmpeg,string audio,bool videoOnly,string encoder) {
         string output=Path.Combine(OutDir,videoOnly?"chunk_"+first.ToString("D6",Inv)+".mp4":count==TotalFrames?"video.mp4":"preview.mp4");
         ProcessStartInfo psi=new ProcessStartInfo(ffmpeg){UseShellExecute=false,RedirectStandardInput=true,RedirectStandardError=true,CreateNoWindow=true};
-        var args=new List<string>{"-hide_banner","-loglevel","warning","-y","-f","rawvideo","-pixel_format","bgra","-video_size",W+"x"+H,
+        var args=new List<string>{"-hide_banner","-loglevel","warning","-y","-f","rawvideo","-pixel_format","bgra","-video_size",OutputWidth+"x"+OutputHeight,
             "-framerate",Fps.ToString(),"-i","pipe:0"};
         if(!videoOnly)args.AddRange(new[]{"-i",audio});
         args.AddRange(new[]{"-map","0:v:0"});
@@ -606,12 +621,12 @@ public static class ReusableCinema
         args.AddRange(new[]{"-t",(count/(double)Fps).ToString("F6",Inv),"-movflags","+faststart",output});
         foreach(string a in args)psi.ArgumentList.Add(a);
         using(Process process=Process.Start(psi)) {
-            var errors=process.StandardError.ReadToEndAsync();byte[] bytes=new byte[W*H*4];Stopwatch clock=Stopwatch.StartNew();
+            var errors=process.StandardError.ReadToEndAsync();byte[] bytes=new byte[OutputWidth*OutputHeight*4];Stopwatch clock=Stopwatch.StartNew();
             try {
                 for(int frame=first;frame<first+count;frame++) {
                     using(Bitmap bitmap=Render(states[frame])) {
-                        BitmapData bits=bitmap.LockBits(new Rectangle(0,0,W,H),ImageLockMode.ReadOnly,PixelFormat.Format32bppArgb);
-                        if(bits.Stride!=W*4)throw new InvalidDataException("Unexpected BGRA stride");
+                        BitmapData bits=bitmap.LockBits(new Rectangle(0,0,OutputWidth,OutputHeight),ImageLockMode.ReadOnly,PixelFormat.Format32bppArgb);
+                        if(bits.Stride!=OutputWidth*4)throw new InvalidDataException("Unexpected BGRA stride");
                         Marshal.Copy(bits.Scan0,bytes,0,bytes.Length);bitmap.UnlockBits(bits);
                         process.StandardInput.BaseStream.Write(bytes,0,bytes.Length);
                     }

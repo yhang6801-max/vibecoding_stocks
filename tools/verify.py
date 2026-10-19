@@ -5,8 +5,10 @@ from pathlib import Path
 import re
 import subprocess
 
-from media import run
-from project import digest, load_project, read_json, write_json
+from media import run, probe_media
+from fractions import Fraction
+import math
+from project import audio_enabled, digest, load_project, read_json, write_json
 
 
 def verify(project: Path, output: Path, ffmpeg):
@@ -19,17 +21,38 @@ def verify(project: Path, output: Path, ffmpeg):
         checks.append({"name": name, "passed": bool(condition), "detail": detail})
     check("encoded_video_hash", digest(video) == record["video_sha256"], record["video_sha256"])
     check("current_project_and_csv", record["input_hashes"]["project"] == digest(project) and record["input_hashes"]["daily"] == digest(csv_path), "Inputs match current project")
-    result = run([ffmpeg, "-hide_banner", "-i", video, "-map", "0:v:0", "-f", "null", "-"], capture_output=True, text=True, encoding="utf-8", errors="replace")
-    log = result.stderr
-    counts = re.findall(r"frame=\s*(\d+)", log)
+    metadata = probe_media(ffmpeg, video)
+    streams = metadata.get("streams", [])
+    videos = [s for s in streams if s.get("codec_type") == "video"]
+    audios = [s for s in streams if s.get("codec_type") == "audio"]
+    v = videos[0] if videos else {}
+    a = audios[0] if audios else {}
+    result = run([ffmpeg, "-hide_banner", "-v", "error", "-xerror", "-i", video,
+                  "-map", "0:v:0", "-progress", "pipe:1", "-nostats", "-f", "null", "-"],
+                 capture_output=True, text=True, encoding="utf-8", errors="replace")
+    counts = re.findall(r"^frame=(\d+)$", result.stdout, re.M)
     decoded = int(counts[-1]) if counts else -1
     check("complete_decode_and_frames", decoded == record["frames"], decoded)
-    check("H264_and_yuv420p", "Video: h264" in log and "yuv420p" in log, "H.264 / yuv420p")
-    check("canvas_and_fps", f"{record['width']}x{record['height']}" in log and re.search(r"\b30 fps\b", log), [record["width"], record["height"], 30])
-    check("audio_presence", ("Audio: aac" in log) == record["audio"], record["audio"])
-    durations = re.findall(r"Duration: (\d+):(\d+):(\d+\.\d+)", log)
-    duration = sum(float(t) * factor for t, factor in zip(durations[0], (3600, 60, 1))) if durations else -1
+    check("H264_and_yuv420p", len(videos) == 1 and v.get("codec_name") == "h264" and v.get("pix_fmt") == "yuv420p", v.get("codec_name"))
+    expected_width = round(config["video"]["width"] * record.get("preview_scale", 1))
+    expected_height = round(config["video"]["height"] * record.get("preview_scale", 1))
+    rate = v.get("avg_frame_rate", "0/1")
+    try:
+        actual_fps = float(Fraction(rate))
+    except (ValueError, ZeroDivisionError):
+        actual_fps = 0
+    check("canvas_and_fps", v.get("width") == record["width"] == expected_width and
+          v.get("height") == record["height"] == expected_height and actual_fps == record["fps"] == config["video"]["fps"],
+          [v.get("width"), v.get("height"), rate])
+    check("audio_presence", len(audios) == (1 if record["audio"] else 0) and
+          record["audio"] == audio_enabled(config), len(audios))
+    check("frame_range", record["start_frame"] >= 0 and record["frames"] > 0 and
+          record["start_frame"] + record["frames"] <= config["video"]["frames"] and
+          (record["kind"] != "full" or (record["start_frame"] == 0 and record["frames"] == config["video"]["frames"])) and
+          abs(record["duration"] - record["frames"] / record["fps"]) < 1e-6, [record["start_frame"], record["frames"]])
+    duration = float(metadata.get("format", {}).get("duration", -1))
     check("duration", abs(duration - record["duration"]) <= .1, duration)
+    check("full_resolution", record["kind"] != "full" or record.get("preview_scale", 1) == 1, record.get("preview_scale", 1))
     by_date = {row["date"]: row["close"] for row in rows}
     count, correct, contiguous, no_future = 0, True, True, True
     event_holds = {e['id']: {'frames': 0, 'correct': True} for e in config['events'] if e['hold'] > 0}
@@ -53,12 +76,17 @@ def verify(project: Path, output: Path, ffmpeg):
     check("contiguous_frame_states", contiguous and count == record["frames"], count)
     check("actual_trading_day_quotes", correct, "Every quoted close matches current CSV")
     check("no_future_chart_data", no_future, "Visible last date never exceeds quote date")
+    for event in config["events"]:
+        if event["hold"] > 0:
+            begin = max(first, math.ceil(event["arrival"] * record["fps"] - 1e-8))
+            end = min(first + record["frames"], math.ceil((event["arrival"] + event["hold"]) * record["fps"] - 1e-8))
+            event_holds[event["id"]]["expected"] = max(0, end - begin)
+    check("event_holds", all(e["frames"] == e["expected"] and e["correct"] for e in event_holds.values()), event_holds)
     if record["kind"] == "full":
-        check("event_holds", all(e['frames'] > 0 and e['correct'] for e in event_holds.values()), event_holds)
         check("final_trading_day", last_date == rows[-1]['date'], last_date)
     loudness = None
     if record["audio"]:
-        check("AAC_48kHz_stereo", "48000 Hz, stereo" in log, "48kHz stereo AAC")
+        check("AAC_48kHz_stereo", a.get("codec_name") == "aac" and a.get("sample_rate") == "48000" and a.get("channels") == 2, "48kHz stereo AAC")
         decoded_audio = run([ffmpeg, "-hide_banner", "-loglevel", "error", "-i", video,
             "-vn", "-ac", "2", "-ar", "48000", "-f", "f32le", "pipe:1"], capture_output=True)
         audio_seconds = len(decoded_audio.stdout) / (48000 * 2 * 4)

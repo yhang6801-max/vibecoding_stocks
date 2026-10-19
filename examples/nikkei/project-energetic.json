@@ -1,0 +1,207 @@
+{
+  "name": "日经225 1985—2025 激情配乐完整版",
+  "preset": "classic220",
+  "data": "daily.csv",
+  "data_source": "FRED NIKKEI225 / Nikkei Indexes",
+  "instrument": {
+    "name": "日经225指数",
+    "symbol": "NIKKEI225",
+    "unit": "点",
+    "measure": "daily_close_price_index",
+    "dividends_included": false
+  },
+  "video": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 220,
+    "frames": 6600
+  },
+  "events": [
+    {
+      "id": "J01",
+      "date": "1985-09-24",
+      "label": "广场协议·日元升值",
+      "major": false,
+      "low": false,
+      "arrival": 6.439637827,
+      "hold": 1
+    },
+    {
+      "id": "J02",
+      "date": "1987-10-20",
+      "label": "全球股灾波及东京",
+      "major": false,
+      "low": false,
+      "arrival": 17.326961771,
+      "hold": 1
+    },
+    {
+      "id": "J03",
+      "date": "1989-12-29",
+      "label": "泡沫经济顶峰",
+      "major": true,
+      "low": false,
+      "arrival": 28.802816901,
+      "hold": 2
+    },
+    {
+      "id": "J04",
+      "date": "1992-08-18",
+      "label": "泡沫破裂 跌至1.43万",
+      "major": false,
+      "low": true,
+      "arrival": 43.397384306,
+      "hold": 1
+    },
+    {
+      "id": "J05",
+      "date": "1997-11-25",
+      "label": "山一证券停业",
+      "major": false,
+      "low": false,
+      "arrival": 69.573440644,
+      "hold": 1
+    },
+    {
+      "id": "J06",
+      "date": "2000-04-17",
+      "label": "科技股大跌",
+      "major": false,
+      "low": true,
+      "arrival": 82.004024145,
+      "hold": 1
+    },
+    {
+      "id": "J07",
+      "date": "2003-04-28",
+      "label": "失落十年 跌破8000",
+      "major": false,
+      "low": true,
+      "arrival": 97.468812877,
+      "hold": 1
+    },
+    {
+      "id": "J08",
+      "date": "2008-10-27",
+      "label": "全球金融危机急跌",
+      "major": true,
+      "low": true,
+      "arrival": 124.743460765,
+      "hold": 2
+    },
+    {
+      "id": "J09",
+      "date": "2011-03-15",
+      "label": "东日本大震灾冲击",
+      "major": false,
+      "low": false,
+      "arrival": 138.108651911,
+      "hold": 1
+    },
+    {
+      "id": "J10",
+      "date": "2012-12-26",
+      "label": "安倍上任",
+      "major": false,
+      "low": false,
+      "arrival": 147.635814889,
+      "hold": 1
+    },
+    {
+      "id": "J11",
+      "date": "2013-04-05",
+      "label": "日本央行大规模宽松",
+      "major": false,
+      "low": false,
+      "arrival": 149.943661972,
+      "hold": 1
+    },
+    {
+      "id": "J12",
+      "date": "2016-01-29",
+      "label": "日本央行宣布负利率",
+      "major": false,
+      "low": false,
+      "arrival": 164.401408451,
+      "hold": 1
+    },
+    {
+      "id": "J13",
+      "date": "2020-03-19",
+      "label": "疫情冲击阶段低点",
+      "major": false,
+      "low": true,
+      "arrival": 185.162977867,
+      "hold": 1
+    },
+    {
+      "id": "J14",
+      "date": "2021-02-15",
+      "label": "重返3万点",
+      "major": false,
+      "low": false,
+      "arrival": 190.518108652,
+      "hold": 1
+    },
+    {
+      "id": "J15",
+      "date": "2024-02-22",
+      "label": "刷新1989年收盘纪录",
+      "major": true,
+      "low": false,
+      "arrival": 205.930583501,
+      "hold": 2
+    },
+    {
+      "id": "J16",
+      "date": "2024-08-05",
+      "label": "单日重挫12.4%",
+      "major": false,
+      "low": false,
+      "arrival": 210.088531187,
+      "hold": 1
+    },
+    {
+      "id": "J17",
+      "date": "2025-10-27",
+      "label": "首次收于5万点之上",
+      "major": false,
+      "low": false,
+      "arrival": 216.0,
+      "hold": 1
+    }
+  ],
+  "display": {
+    "title": "日股40年走势",
+    "subtitle": "从泡沫到重生",
+    "instrument_label": "日经225指数",
+    "source": "FRED NIKKEI225",
+    "range_label": "日经225指数 · 1985—2025",
+    "ending": "你觉得日本失去的30年\n回来了吗？",
+    "unit": "点"
+  },
+  "publishing": {
+    "title": "日股40年：从泡沫到重生",
+    "description": "回看日经225指数1985—2025年的日收盘走势。数据截至2025年10月31日，不含分红再投资。\n\n#日经225 #日本股市 #股市历史 #数据可视化",
+    "cover_lines": [
+      "日股",
+      "40年"
+    ],
+    "cover_subtitle": "从泡沫到重生",
+    "topics": [
+      "日经225",
+      "日本股市",
+      "股市历史",
+      "数据可视化"
+    ]
+  },
+  "render": {
+    "workers": 3,
+    "chunk_frames": 300,
+    "content_scale": 1.0
+  },
+  "audio": {
+    "score": "energetic220"
+  }
+}

@@ -6,11 +6,11 @@
 
 ### 找不到 FFmpeg？
 
-将其加入 PATH，或设置 `FFMPEG_BIN` 指向 `ffmpeg.exe`。环境检查、预览、制作和验收命令也接受 `--ffmpeg` 显式路径。封面仅需现有 Windows 绘图环境，无需 FFmpeg。当前媒体检查直接调用 FFmpeg，不要求另装 `ffprobe`。
+将其加入 PATH，或设置 `FFMPEG_BIN` 指向 `ffmpeg.exe`。环境检查、预览、制作和验收命令也接受 `--ffmpeg` 显式路径。封面仅需现有 Windows 绘图环境，无需 FFmpeg。媒体信息由同包的 FFprobe 输出 JSON；FFmpeg 负责完整解码检查。
 
 ### 中文乱码、缺字或字体找不到？
 
-确认使用 PowerShell 7、UTF-8 的 JSON 与 CSV，Windows 已安装微软雅黑、Bahnschrift。首版渲染依赖 Windows `System.Drawing`，不保证 Linux、macOS 或无图形依赖容器。仓库不分发字体。
+确认使用 PowerShell 7、UTF-8 的 JSON 与 CSV，Windows 已安装微软雅黑、Bahnschrift。Windows 后端依赖 `System.Drawing`；Mac 使用 SkiaSharp，安装与字体配置见 [Mac 指南](mac.md)。Linux 暂未验收。仓库不分发字体。
 
 ### 初始化后为什么仍是韩股／日股？
 

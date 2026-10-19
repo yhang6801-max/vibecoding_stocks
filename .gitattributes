@@ -2,3 +2,9 @@
 examples/**/daily.csv -text
 *.png binary
 *.jpg binary
+# Existing C# / PowerShell snapshots use CRLF; don't report CR as trailing space.
+*.cs whitespace=cr-at-eol
+*.ps1 whitespace=cr-at-eol
+
+# Project JSON snapshots also retain their original CRLF line endings.
+*.json whitespace=cr-at-eol

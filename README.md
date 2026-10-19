@@ -15,9 +15,15 @@
 
 *韩股片尾预览解码帧：119.9667 秒，CPU 短编码后实际解码，展示完整区间及高点后的回落。该图片来自发布版配置的片尾回归，不是完整 MP4 的解码帧。*
 
-## 五分钟上手
+## Mac 与项目规范
 
-需要 **Windows、PowerShell 7、Python 3.11+、FFmpeg**，以及 Windows 的微软雅黑、Bahnschrift 字体。FFmpeg 需含 `libx264` 和 AAC；无需 NVIDIA 显卡。工具会实际检测 NVENC 编码能力，`auto` 不可用时使用 CPU。
+Mac 原生渲染现使用 **.NET 8 + SkiaSharp**，安装和命令见 [Mac 指南](docs/mac.md)。支持两套模板、封面、低清预览及校验后分段续跑；实际检查范围以 [验证记录](docs/validation.md) 为准。Mac 无需 PowerShell。
+
+开发与 AI 协作先阅读 [AGENT.md](AGENT.md)；`AGENTS.md` 是自动发现入口。制作工作流可整理成个人 `stock-video-production` Skill；个人 Skill 不随仓库自动安装。当前仍保留两套固定时间轴，未实现任意时长或可视化编辑器。
+
+## Windows 五分钟上手
+
+需要 **Windows、PowerShell 7、Python 3.11+、FFmpeg**，以及 Windows 的微软雅黑、Bahnschrift 字体。FFmpeg 需含 `libx264` 和 AAC，并安装同包的 FFprobe；无需 NVIDIA 显卡。工具会实际检测 NVENC 编码能力，`auto` 不可用时使用 CPU。
 
 下载仓库后，在仓库根目录打开 PowerShell 7：
 
@@ -80,3 +86,5 @@ FFmpeg 不在 PATH 时可设置 `$env:FFMPEG_BIN = 'C:\Tools\ffmpeg\bin\ffmpeg.e
 原创代码、文档、视觉源码及韩股配乐合成源码采用 [MIT](LICENSE)。示例行情保留 [Naver / FinanceDataReader 来源](examples/kospi/sources.json)与 [FRED NIKKEI225 来源](examples/nikkei/sources.json)，第三方数据权利不随 MIT 授权转移，适用条件见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。系统字体、第三方录屏、外部音乐和完整成片不随仓库分发。
 
 示例展示日收盘价格指数，不含分红再投资。事件背景与行情变化分别陈述；动画中的连续游标不是新增真实报价。音频验收记录只证明已做的技术检查，发布前仍应在本机播放器完整观看、试听。
+
+日经 Mac 分支另有[激情配乐配置](docs/energetic-score.md)：`examples/nikkei/project-energetic.json`，加入原创 140 BPM 电子配乐和事件音效。原日经配置继续为静音；两者均为 220 秒。
