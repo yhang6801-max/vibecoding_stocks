@@ -55,7 +55,7 @@ def nice_upper(value):
 
 
 def audio_enabled(config):
-    return config["preset"] == "cinematic120" or config.get("audio", {}).get("score") == "energetic220"
+    return config["preset"] == "cinematic120" or config.get("audio", {}).get("score") in ("energetic220", "external220")
 
 
 def load_project(path: Path):
@@ -69,8 +69,18 @@ def load_project(path: Path):
     if any(config.get("video", {}).get(key, value) != value for key, value in expected.items()):
         raise ValueError(f"{preset} 使用固定规格 {expected}")
     config["video"] = expected
-    if preset == "classic220" and config.get("audio", {}).get("score") not in (None, "energetic220"):
-        raise ValueError("classic220 audio.score 仅支持 energetic220 或省略为静音")
+    if preset == "classic220" and config.get("audio", {}).get("score") not in (None, "energetic220", "external220"):
+        raise ValueError("classic220 audio.score 仅支持 energetic220、external220 或省略为静音")
+    if config.get("audio", {}).get("score") == "external220":
+        if preset != "classic220":
+            raise ValueError("external220 仅支持 classic220")
+        for key in ("file", "provenance"):
+            name = config["audio"].get(key)
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError(f"external220 需要 audio.{key}")
+            if not (path.parent / name).resolve(strict=True).is_file():
+                raise ValueError(f"audio.{key} 必须是文件")
+        read_json(path.parent / config["audio"]["provenance"])
     csv_path = (path.parent / config["data"]).resolve(strict=True)
     rows = daily_csv(csv_path)
     by_date = {row["date"]: row["close"] for row in rows}
@@ -159,6 +169,9 @@ def load_project(path: Path):
 def prepare(path: Path, output: Path):
     project, config, rows, csv_path = load_project(path)
     output = output.expanduser().resolve()
+    if config.get("audio", {}).get("score") == "external220":
+        for key in ("file", "provenance"):
+            config["audio"][key] = str((project.parent / config["audio"][key]).resolve(strict=True))
     for key in ("text_file", "number_file"):
         if config.get("fonts", {}).get(key):
             config["fonts"][key] = str((project.parent / config["fonts"][key]).resolve(strict=True))

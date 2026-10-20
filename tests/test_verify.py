@@ -45,6 +45,18 @@ class VerifyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '媒体验收失败'):
                 self.run_verify()
 
+    def test_replaced_external_audio_fails_source_integrity(self):
+        _, config, rows, csv = load_project(self.project)
+        audio=self.out/'music.wav';source=self.out/'source.json'
+        audio.write_bytes(b'updated master');write_json(source,{'origin':'original'})
+        config['audio']={'score':'external220','file':str(audio),'provenance':str(source)}
+        self.record['input_hashes'].update(external_audio_file='old-master-hash',external_audio_provenance=digest(source))
+        write_json(self.out/'build_record.json',self.record)
+        with patch('verify.load_project',return_value=(self.project,config,rows,csv)):
+            with self.assertRaisesRegex(ValueError,'媒体验收失败'):self.run_verify()
+        checks=json.loads((self.out/'verification.json').read_text())['checks']
+        self.assertFalse(next(c['passed'] for c in checks if c['name']=='current_external_audio'))
+
     def test_wrong_frame_rate_is_rejected(self):
         self.metadata['streams'][0]['avg_frame_rate']='24/1'
         with self.assertRaisesRegex(ValueError,'媒体验收失败'):

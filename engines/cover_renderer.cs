@@ -184,9 +184,15 @@ public static class KospiPublishCovers
         using (var pen = new Pen(Alpha(Gold, 68), 1)) g.DrawRectangle(pen, badgeX, y - 3, badgeW, 39);
         Text(g, DurationLabel, badgeX + badgeW / 2, y + 5, Fitted(g, DurationLabel, badgeW - 14, 19, false, true), Cream, false, true, 2);
         if (!portrait) {
-            float titleSize = Fitted(g, Primary + Accent, available, 140, true);
-            float next = x + Text(g, Primary, x, 161, titleSize, White, true) + 10;
-            Text(g, Accent, next, 161, titleSize, Gold, true);
+            if ((Primary + Accent).Length > 10) {
+                // Long question headlines get two intentional lines, not a tiny single line.
+                Text(g, Primary, x, 145, Fitted(g, Primary, available, 78, true), White, true);
+                Text(g, Accent, x, 242, Fitted(g, Accent, available, 92, true), Gold, true);
+            } else {
+                float titleSize = Fitted(g, Primary + Accent, available - 10, 140, true);
+                float next = x + Text(g, Primary, x, 161, titleSize, White, true) + 10;
+                Text(g, Accent, next, 161, titleSize, Gold, true);
+            }
             Text(g, Subtitle, x + 3, 357, Fitted(g, Subtitle, available * .70f, 36), Alpha(White, 226));
             Text(g, RangeLabel, Width - x, 366, 27, Gold, false, true, 1);
             Line(g, new PointF(x, 432), new PointF(Width - x, 432), Alpha(Muted, 45));

@@ -19,7 +19,7 @@
 
 Mac 原生渲染现使用 **.NET 8 + SkiaSharp**，安装和命令见 [Mac 指南](docs/mac.md)。支持两套模板、封面、低清预览及校验后分段续跑；实际检查范围以 [验证记录](docs/validation.md) 为准。Mac 无需 PowerShell。
 
-开发与 AI 协作先阅读 [AGENT.md](AGENT.md)；`AGENTS.md` 是自动发现入口。制作工作流可整理成个人 `stock-video-production` Skill；个人 Skill 不随仓库自动安装。当前仍保留两套固定时间轴，未实现任意时长或可视化编辑器。
+开发与 AI 协作先阅读 [AGENTS.md](AGENTS.md)，它同时是自动发现入口和完整项目规范，包含后续 Windows 本地 AI 歌曲生成方案。制作工作流可整理成个人 `stock-video-production` Skill；个人 Skill 不随仓库自动安装。当前仍保留两套固定时间轴，未实现任意时长或可视化编辑器。
 
 ## Windows 五分钟上手
 

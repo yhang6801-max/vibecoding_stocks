@@ -57,3 +57,9 @@ date,close
 ## 日经可选配乐
 
 `classic220` 可通过 `audio.score: "energetic220"` 启用原创 140 BPM 配乐，完整例子见 `examples/nikkei/project-energetic.json`。省略该字段仍为静音；时长与事件时间保持原契约。配乐编排与来源说明见 [日经完整版配乐](energetic-score.md)。
+
+## 导入已完成的配乐母带
+
+classic220 也支持 `audio.score: "external220"`，同时填写 `audio.file`（220 秒、单音轨的混音文件）与 `audio.provenance`（来源及适用条件的 JSON 文件），两者相对 project.json 解析。母带应已经包含需要的事件音效和首尾编排，此入口不会自动叠加旧配乐、延长或循环素材。
+
+工具转换为 48 kHz 双声道 PCM；音源和来源记录均进入缓存指纹，输出母带另校验哈希，独立 verify 会重新核对当前音源。最终 AAC 的响度与真峰值仍需通过验收；导入并不自动证明音量合格。模型生成音频应记录模型、版本、提示词、随机种子、编辑与来源条件，不把 MIDI 编曲称作模型人声输出。

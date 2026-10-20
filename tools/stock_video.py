@@ -12,7 +12,7 @@ import subprocess
 import sys
 import time
 
-from media import choose_encoder, ffmpeg_path, ffprobe_path, powershell, run
+from media import choose_encoder, ffmpeg_path, ffprobe_path, powershell, probe_media, run
 from renderer import renderer_command, select_backend, identity
 from chunk_cache import reusable, complete
 from project import audio_enabled, ROOT, digest, load_project, prepare, read_json, write_json
@@ -55,6 +55,10 @@ def initialize(args):
 
 def inputs_hash(project, csv_path):
     files = {"project": digest(project), "daily": digest(csv_path)}
+    config = read_json(project)
+    if config.get("audio", {}).get("score") == "external220":
+        for key in ("file", "provenance"):
+            files["external_audio_" + key] = digest(project.parent / config["audio"][key])
     for folder in ("engines", "tools"):
         for path in sorted((ROOT / folder).rglob("*")):
             if {"bin", "obj", "__pycache__"}.intersection(path.parts):
@@ -67,6 +71,27 @@ def inputs_hash(project, csv_path):
 def audio(config, work, output, ffmpeg):
     if not audio_enabled(config):
         return None
+    if config.get("audio", {}).get("score") == "external220":
+        source = Path(config["audio"]["file"])
+        provenance = Path(config["audio"]["provenance"])
+        media = probe_media(ffmpeg, source)
+        streams = [s for s in media["streams"] if s["codec_type"] == "audio"]
+        if len(streams) != 1 or abs(float(media["format"]["duration"])-220) > .05:
+            raise ValueError("external220 要求已完成编排与混音的单音轨 220 秒文件")
+        target = output / "audio"
+        target.mkdir(parents=True, exist_ok=True)
+        fingerprint = {"source": digest(source), "provenance": digest(provenance)}
+        saved = target / "inputs.json"
+        mix = target / "mix.wav"
+        manifest = target / "manifest.json"
+        if (not saved.exists() or read_json(saved) != fingerprint or not mix.exists()
+                or not manifest.exists() or read_json(manifest).get("mix_sha256") != digest(mix)):
+            run([ffmpeg, "-v", "error", "-y", "-i", source, "-map", "0:a:0", "-ar", "48000",
+                 "-ac", "2", "-c:a", "pcm_s24le", mix])
+            write_json(saved, fingerprint)
+            write_json(manifest, {"score": "external220", "source": fingerprint,
+                                 "provenance": read_json(provenance), "mix_sha256": digest(mix)})
+        return mix
     score = ROOT / "engines" / ("cinematic_audio.py" if config["preset"] == "cinematic120" else "energetic_audio.py")
     target = output / "audio"
     fingerprint = {"project": digest(work / "project.json"),

@@ -21,6 +21,10 @@ def verify(project: Path, output: Path, ffmpeg):
         checks.append({"name": name, "passed": bool(condition), "detail": detail})
     check("encoded_video_hash", digest(video) == record["video_sha256"], record["video_sha256"])
     check("current_project_and_csv", record["input_hashes"]["project"] == digest(project) and record["input_hashes"]["daily"] == digest(csv_path), "Inputs match current project")
+    if config.get("audio", {}).get("score") == "external220":
+        check("current_external_audio", all(
+            record["input_hashes"].get("external_audio_"+key) == digest(project.parent/config["audio"][key])
+            for key in ("file", "provenance")), "Audio and provenance hashes match current project")
     metadata = probe_media(ffmpeg, video)
     streams = metadata.get("streams", [])
     videos = [s for s in streams if s.get("codec_type") == "video"]

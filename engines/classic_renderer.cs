@@ -32,10 +32,10 @@ public static class ReusableClassicRenderer
     private const int Height = 1920;
     private const int Fps = 30;
     private const int FrameCount = 6600;
-    private const float PlotLeft = 158f;
-    private const float PlotRight = 1030f;
+    private const float PlotLeft = 234f;
+    private const float PlotRight = 900f;
     private const float PlotTop = 520f;
-    private const float PlotBottom = 1320f;
+    private const float PlotBottom = 1090f;
     private static readonly Color Red = ColorTranslator.FromHtml("#FFF0D1");
     private static readonly Color Green = ColorTranslator.FromHtml("#D7BD80");
     private static readonly Color TextGray = Color.FromArgb(222, 226, 234);
@@ -86,6 +86,11 @@ public static class ReusableClassicRenderer
         public string RangeLabel = "";
         public string Ending = "";
         public string Unit = "";
+        public bool StellarMotion;
+        public bool PlanetaryMotion;
+        public bool NebulaMotion;
+        public bool ReadableChartMotion;
+        public string IntroQuestion = "";
     }
 
     private struct FrameState
@@ -118,7 +123,7 @@ public static class ReusableClassicRenderer
                 "EVENT {0:yyyy-MM-dd} at {1:0.000}s, hold {2:0}s: {3}",
                 ev.Date, ev.Arrival, ev.Hold, ev.Label));
 
-        using (Bitmap background = BuildBackground())
+        using (Bitmap background = BuildBackground(model))
         using (Font axisFont = new Font("Microsoft YaHei", 31f, FontStyle.Regular, GraphicsUnit.Pixel))
         using (Font yearFont = new Font("Microsoft YaHei", 34f, FontStyle.Bold, GraphicsUnit.Pixel))
         using (Font titleFont = new Font("Microsoft YaHei", 60f, FontStyle.Bold, GraphicsUnit.Pixel))
@@ -221,6 +226,11 @@ public static class ReusableClassicRenderer
                 model.RangeLabel = ReadText(display, "range_label");
                 model.Ending = ReadText(display, "ending");
                 model.Unit = ReadText(display, "unit");
+                model.ReadableChartMotion = ReadText(display, "motion_style") == "nebula_chart";
+                model.NebulaMotion = model.ReadableChartMotion || ReadText(display, "motion_style") == "nebula";
+                model.PlanetaryMotion = model.NebulaMotion || ReadText(display, "motion_style") == "planetary";
+                model.StellarMotion = model.PlanetaryMotion || ReadText(display, "motion_style") == "stellar";
+                model.IntroQuestion = ReadText(display, "intro_question");
             }
             if (String.IsNullOrWhiteSpace(model.Title)) model.Title = model.InstrumentLabel;
             if (String.IsNullOrWhiteSpace(model.RangeLabel))
@@ -428,8 +438,9 @@ public static class ReusableClassicRenderer
              + (-2 * u3 + 3 * u2) * b.Close + (u3 - u2) * span * m1;
     }
 
-    private static Bitmap BuildBackground()
+    private static Bitmap BuildBackground(Model model)
     {
+        if (model.NebulaMotion && !model.ReadableChartMotion) return BuildNebulaBackground();
         Bitmap image = new Bitmap(Width, Height, PixelFormat.Format32bppArgb);
         using (Graphics g = Graphics.FromImage(image))
         using (LinearGradientBrush gradient = new LinearGradientBrush(new Point(0, 0),
@@ -467,6 +478,9 @@ public static class ReusableClassicRenderer
             g.CompositingQuality = CompositingQuality.HighQuality;
             g.PixelOffsetMode = PixelOffsetMode.HighQuality;
             g.DrawImageUnscaled(background, 0, 0);
+            if (model.PlanetaryMotion && !model.NebulaMotion)
+                using (Brush space = new SolidBrush(Color.FromArgb(3, 6, 15)))
+                    g.FillRectangle(space, 0, 0, Width, Height);
             GraphicsState original = g.Save();
             if (contentScale < 1f)
             {
@@ -476,22 +490,37 @@ public static class ReusableClassicRenderer
                     g.Transform = transform;
             }
             {
+                if (model.StellarMotion) DrawStarField(g, time, model.ReadableChartMotion ? 0.10 : 0.25);
                 DrawAxes(g, model, state, axisFont, yearFont);
-                List<PointF> line = time >= 3.0 ? DrawLine(g, model.Daily, state) : new List<PointF>();
+                List<PointF> line = time >= 3.0 ? DrawLine(g, model.Daily, state,
+                    model.PlanetaryMotion && !model.ReadableChartMotion) : new List<PointF>();
                 if (time >= 3.0)
                 {
-                    DrawSparklers(g, model, state, time);
-                    DrawImpact(g, model, state, time, false);
-                    DrawEvents(g, model, state, time, line, eventFont);
+                    if (model.NebulaMotion) DrawNebulaHead(g, model, state, time);
+                    else if (model.PlanetaryMotion) DrawPlanetaryHead(g, model, state, time);
+                    else
+                    {
+                        DrawSparklers(g, model, state, time);
+                        DrawImpact(g, model, state, time, false);
+                        DrawEvents(g, model, state, time, line, eventFont);
+                    }
                 }
             }
             DrawHeader(g, model, state, time);
             DrawNavigator(g, model, state, time);
             DrawImpact(g, model, state, time, true);
+            if (model.StellarMotion && !model.PlanetaryMotion && time >= 3 && time < 218)
+                DrawStellarTransition(g, model, state, time);
             DrawFooter(g, model);
             if (time >= 218.0) DrawEnding(g, model, time, endingFont);
             g.Restore(original);
-            if (time < 3.0) DrawIntro(g, model, time);
+            if (time < 3.0)
+            {
+                if (model.NebulaMotion) DrawNebulaIntro(g, model, state, time, background);
+                else if (model.PlanetaryMotion) DrawPlanetaryIntro(g, model, state, time);
+                else if (model.StellarMotion) DrawStellarIntro(g, model, state, time);
+                else DrawIntro(g, model, time);
+            }
 
         }
         return bitmap;
@@ -609,9 +638,22 @@ public static class ReusableClassicRenderer
 
     private static void DrawAxes(Graphics g, Model model, FrameState state, Font monthFont, Font yearFont)
     {
+        // A floating spatial composition: numerical scale remains in the actual quote,
+        // with only two quiet reference levels and no chart frame or time ticks.
+        if (model.PlanetaryMotion && !model.ReadableChartMotion)
+        {
+            using (Font font = new Font("Bahnschrift", 25, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (Brush ink = new SolidBrush(Color.FromArgb(65, 131, 146, 167)))
+            {
+                double step = NiceStep((state.YMax-state.YMin)/2.0);
+                for (double value=Math.Ceiling(state.YMin/step)*step;value<state.YMax;value+=step)
+                    g.DrawString(value.ToString("N0",CultureInfo.InvariantCulture),font,ink,new PointF(112,Y(value,state)-15));
+            }
+            return;
+        }
         using (Pen axis = new Pen(Color.FromArgb(65, 131, 146, 167), 2f))
         using (Pen tick = new Pen(Color.FromArgb(75, 131, 146, 167), 2f))
-        using (Brush label = new SolidBrush(TextGray))
+        using (Brush label = new SolidBrush(model.ReadableChartMotion ? Color.FromArgb(178, 190, 207) : TextGray))
         using (StringFormat centered = new StringFormat { Alignment = StringAlignment.Center })
         using (StringFormat right = new StringFormat { Alignment = StringAlignment.Far,
             LineAlignment = StringAlignment.Center })
@@ -622,15 +664,22 @@ public static class ReusableClassicRenderer
                 state.CameraSpan <= 168 ? 24 : state.CameraSpan <= 420 ? 60 : 120;
             int firstMonth = (int)Math.Ceiling(state.CameraLeft / tickMonths) * tickMonths;
             int lastMonth = (int)Math.Floor(Math.Min(state.CameraLeft + state.CameraSpan, MonthCoordinate(state.Head)));
+            float previousLabelRight = state.CameraSpan > 420 ? PlotLeft + 80 : float.NegativeInfinity;
             for (int index = firstMonth; index <= lastMonth; index += tickMonths)
             {
                 float x = X(index, state);
                 if (state.CameraSpan > 420 && x < PlotLeft + 110) continue;
                 int year = index / 12, month = index % 12 + 1;
-                g.DrawLine(tick, x, PlotBottom, x, PlotBottom + 14);
                 string text = tickMonths < 12 ? year.ToString() + "." + month.ToString("D2") : year.ToString();
-                g.DrawString(text, tickMonths < 12 ? monthFont : yearFont, label,
-                    new RectangleF(Math.Max(16, Math.Min(Width-160, x-80)), PlotBottom+22, 160, 60), centered);
+                Font axisFont = tickMonths < 12 ? monthFont : yearFont;
+                float boxLeft = Math.Max(96, Math.Min(740, x-80));
+                float textWidth = g.MeasureString(text, axisFont, new SizeF(10000, 10000), centered).Width;
+                float textLeft = boxLeft + (160 - textWidth) / 2;
+                if (textLeft < previousLabelRight + 18) continue;
+                previousLabelRight = textLeft + textWidth;
+                g.DrawLine(tick, x, PlotBottom, x, PlotBottom + 14);
+                g.DrawString(text, axisFont, label,
+                    new RectangleF(boxLeft, PlotBottom+22, 160, 60), centered);
             }
             if (state.CameraSpan > 420)
                 g.DrawString(model.Start.Year.ToString(), yearFont, label,
@@ -643,9 +692,9 @@ public static class ReusableClassicRenderer
                 if (y < PlotTop + 5f || y > PlotBottom - 5f) continue;
                 g.DrawLine(tick, PlotLeft - 14f, y, PlotRight, y);
                 g.DrawString(value.ToString("N0", CultureInfo.InvariantCulture), monthFont, label,
-                    new RectangleF(3f, y - 26f, PlotLeft - 24f, 52f), right);
+                    new RectangleF(96f, y - 26f, PlotLeft - 96f - 24f, 52f), right);
             }
-            g.DrawString(model.Unit, monthFont, label, new PointF(22f, PlotTop - 65f));
+            g.DrawString(model.Unit, monthFont, label, new PointF(96f, PlotTop - 55f));
         }
     }
 
@@ -671,7 +720,7 @@ public static class ReusableClassicRenderer
         return result;
     }
 
-    private static List<PointF> DrawLine(Graphics g, List<Sample> points, FrameState state)
+    private static List<PointF> DrawLine(Graphics g, List<Sample> points, FrameState state, bool planetary = false)
     {
         List<PointF> shapePoints = new List<PointF>(650);
         GraphicsState clipping = g.Save();
@@ -688,11 +737,11 @@ public static class ReusableClassicRenderer
                 new PointF(shapePoints[0].X, PlotBottom) }).ToArray();
             using (var fill = new LinearGradientBrush(new Point(0, (int)PlotTop),
                 new Point(0, (int)PlotBottom), Color.FromArgb(34, 215, 189, 128), Color.FromArgb(0, 215, 189, 128)))
-                g.FillPolygon(fill, area);
+                if (!planetary) g.FillPolygon(fill, area);
             for (int pass = 0; pass < 4; pass++)
             {
-                int[] alphas = { 12, 24, 65, 255 };
-                float[] widths = { 28f, 16f, 8f, 3.5f };
+                int[] alphas = planetary ? new[] { 8, 16, 45, 220 } : new[] { 12, 24, 65, 255 };
+                float[] widths = planetary ? new[] { 18f, 9f, 4f, 1.9f } : new[] { 28f, 16f, 8f, 3.5f };
                 using (Pen pen = new Pen(Color.FromArgb(alphas[pass], 255, 240, 209), widths[pass]))
                 {
                     pen.LineJoin = LineJoin.Round;
@@ -701,6 +750,7 @@ public static class ReusableClassicRenderer
             }
         }
         float hx = X(headMonth, state), hy = Y(state.HeadClose, state);
+        if (planetary) { g.Restore(clipping); return shapePoints; }
         double seconds = (state.Progress - points[0].Date).TotalDays;
         float pulse = 20f + 6f * (float)Math.Sin(seconds * 0.12);
         using (Pen guide = new Pen(Color.FromArgb(45, 215, 189, 128), 1f))
@@ -906,6 +956,21 @@ public static class ReusableClassicRenderer
 
     private static void DrawHeader(Graphics g, Model model, FrameState state, double time)
     {
+        if (model.PlanetaryMotion && !model.ReadableChartMotion)
+        {
+            using (Font label = new Font("Microsoft YaHei", 34, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (Font number = new Font("Bahnschrift", 76, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (Font date = new Font("Bahnschrift", 31, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (Brush white = new SolidBrush(Color.FromArgb(220,240,242,243)))
+            using (Brush gold = new SolidBrush(Color.FromArgb(235,215,189,128)))
+            using (Brush gray = new SolidBrush(Color.FromArgb(150,131,146,167)))
+            {
+                DrawFit(g,model.InstrumentLabel,label,white,new RectangleF(96,215,804,55),null);
+                g.DrawString(state.HeadClose.ToString("N2",CultureInfo.InvariantCulture),number,gold,new PointF(96,282));
+                g.DrawString(state.Head.ToString("yyyy.MM.dd")+"   ·   日收盘",date,gray,new PointF(98,390));
+            }
+            return;
+        }
         using (Font small = new Font("Microsoft YaHei", 25f, FontStyle.Regular, GraphicsUnit.Pixel))
         using (Font title = new Font("Microsoft YaHei", 49f, FontStyle.Bold, GraphicsUnit.Pixel))
         using (Font number = new Font("Bahnschrift", 100f, FontStyle.Bold, GraphicsUnit.Pixel))
@@ -914,20 +979,21 @@ public static class ReusableClassicRenderer
         using (Brush white = new SolidBrush(Color.FromArgb(240, 242, 243)))
         using (Brush gray = new SolidBrush(Color.FromArgb(131, 146, 167)))
         {
-            g.FillRectangle(gold, 65, 65, 44, 4);
-            DrawFit(g, model.InstrumentLabel + "  /  MARKET HISTORY", small, gray, new RectangleF(125, 46, 890, 40), null);
-            DrawFit(g, model.Title, title, white, new RectangleF(65, 112, 950, 80), null);
-            g.DrawString(state.HeadClose.ToString("N2", CultureInfo.InvariantCulture), number, gold, new RectangleF(60, 204, 700, 135));
-            g.DrawString(state.Head.ToString("yyyy.MM.dd"), date, white, new RectangleF(65, 350, 600, 70));
-            g.DrawString("日收盘 / " + model.Unit, small, gray, new RectangleF(760, 290, 260, 45));
+            g.FillRectangle(gold, 96, 170, 36, 4);
+            DrawFit(g, model.InstrumentLabel + "  /  MARKET HISTORY", small, gray, new RectangleF(148, 150, 752, 40), null);
+            DrawFit(g, model.Title, title, white, new RectangleF(96, 206, 804, 70), null);
+            g.DrawString(state.HeadClose.ToString("N2", CultureInfo.InvariantCulture), number, gold, new RectangleF(90, 280, 690, 125));
+            g.DrawString(state.Head.ToString("yyyy.MM.dd"), date, white, new RectangleF(96, 405, 500, 60));
+            g.DrawString("日收盘 / " + model.Unit, small, gray, new RectangleF(695, 420, 205, 40));
             using (Pen divider = new Pen(Color.FromArgb(55, 131, 146, 167), 1))
-                g.DrawLine(divider, 65, 450, 1015, 450);
+                g.DrawLine(divider, 96, 480, 900, 480);
         }
     }
 
     private static void DrawNavigator(Graphics g, Model model, FrameState state, double time)
     {
-        const float left = 85, top = 1740, width = 910, height = 100;
+        if (model.PlanetaryMotion && !model.ReadableChartMotion) return;
+        const float left = 96, top = 1470, width = 804, height = 65;
         double start = model.Daily[0].Month, span = model.Daily[model.Daily.Count-1].Month-start;
         PointF[] points = model.Daily.Select(p => new PointF(left+(float)((p.Month-start)/span)*width,
             top+height-(float)((p.Close-model.OverviewMin)/(model.OverviewMax-model.OverviewMin))*height)).ToArray();
@@ -939,9 +1005,9 @@ public static class ReusableClassicRenderer
         using (Font font = new Font("Microsoft YaHei", 23f, FontStyle.Regular, GraphicsUnit.Pixel))
         using (Brush label = new SolidBrush(Color.FromArgb(131,146,167)))
         {
-            g.DrawString("全历史导航 · 亮区为已播放历史",font,label,new PointF(85,1690));
-            g.DrawString(model.Start.Year.ToString(),font,label,new PointF(85,1855));
-            g.DrawString(model.End.Year.ToString(),font,label,new PointF(935,1855));
+            g.DrawString("全历史导航 · 亮区为已播放历史",font,label,new PointF(96,1430));
+            g.DrawString(model.Start.Year.ToString(),font,label,new PointF(96,1545));
+            g.DrawString(model.End.Year.ToString(),font,label,new PointF(838,1545));
         }
     }
 
@@ -995,17 +1061,30 @@ public static class ReusableClassicRenderer
         float x=X(MonthCoordinate(cue.Date),state), y=Y(cue.Close,state);
         if(card)
         {
+            if (model.PlanetaryMotion && !model.ReadableChartMotion)
+            {
+                using (Font title=new Font("Microsoft YaHei",43,FontStyle.Regular,GraphicsUnit.Pixel))
+                using (Font detail=new Font("Microsoft YaHei",24,FontStyle.Regular,GraphicsUnit.Pixel))
+                using (Brush ink=new SolidBrush(Color.FromArgb((int)(255*opacity),accent)))
+                using (Brush muted=new SolidBrush(Color.FromArgb((int)(165*opacity),180,194,210)))
+                using (StringFormat center=new StringFormat { Alignment=StringAlignment.Center })
+                {
+                    DrawFit(g,cue.Title,title,ink,new RectangleF(96,1200,804,66),center);
+                    DrawFit(g,cue.Date.ToString("yyyy.MM.dd"),detail,muted,new RectangleF(96,1280,804,40),center);
+                }
+                return;
+            }
             float lift=24*(float)Math.Pow(1-Math.Min(1,age/0.4),3);
             using(Brush bg=new SolidBrush(Color.FromArgb((int)(245*opacity),20,32,49)))
             using(Brush ink=new SolidBrush(Color.FromArgb((int)(255*opacity),accent)))
             using(Font title=new Font("Microsoft YaHei",46,FontStyle.Bold,GraphicsUnit.Pixel))
             using(Font detail=new Font("Microsoft YaHei",25,FontStyle.Regular,GraphicsUnit.Pixel))
             {
-                g.FillRectangle(bg,85,1438+lift,910,142);
-                g.FillRectangle(ink,85,1438+lift,7,142);
-                g.FillRectangle(ink,85,1438+lift,910*(float)Math.Min(1,age/.35),3);
-                DrawFit(g,cue.Title,title,ink,new RectangleF(112,1450+lift,855,68),null);
-                DrawFit(g,cue.Detail,detail,ink,new RectangleF(112,1526+lift,855,40),null);
+                g.FillRectangle(bg,96,1190+lift,804,142);
+                g.FillRectangle(ink,96,1190+lift,7,142);
+                g.FillRectangle(ink,96,1190+lift,804*(float)Math.Min(1,age/.35),3);
+                DrawFit(g,cue.Title,title,ink,new RectangleF(120,1202+lift,756,68),null);
+                DrawFit(g,cue.Detail,detail,ink,new RectangleF(120,1278+lift,756,40),null);
             }
             return;
         }
@@ -1036,6 +1115,341 @@ public static class ReusableClassicRenderer
         g.Restore(saved);
     }
 
+    private static double Ease01(double value)
+    {
+        double t = Math.Max(0, Math.Min(1, value));
+        return t * t * (3 - 2 * t);
+    }
+
+    private static double CloudNoise(double x, double y)
+    {
+        int ix=(int)Math.Floor(x), iy=(int)Math.Floor(y);
+        double u=Ease01(x-ix),v=Ease01(y-iy);
+        double a=SparkNoise(ix+iy*197,111),b=SparkNoise(ix+1+iy*197,111);
+        double c=SparkNoise(ix+(iy+1)*197,111),d=SparkNoise(ix+1+(iy+1)*197,111);
+        return (a+(b-a)*u)*(1-v)+(c+(d-c)*u)*v;
+    }
+
+    // Original procedural nebula: built once per render process, no borrowed footage.
+    private static Bitmap BuildNebulaBackground()
+    {
+        Bitmap image=new Bitmap(Width,Height,PixelFormat.Format32bppArgb);
+        BitmapData data=image.LockBits(new Rectangle(0,0,Width,Height),ImageLockMode.WriteOnly,PixelFormat.Format32bppArgb);
+        byte[] pixels=new byte[data.Stride*Height];
+        for(int y=0;y<Height;y++)
+            for(int x=0;x<Width;x++)
+            {
+                double nx=(x-510)/540.0,ny=(y-900)/700.0;
+                double f=.56*CloudNoise(x/210.0+17,y/230.0+19)
+                    +.28*CloudNoise(x/87.0+32,y/95.0+11)+.16*CloudNoise(x/29.0+23,y/31.0+43);
+                double ribbon=Math.Exp(-Math.Pow((nx+.32*Math.Sin(ny*3.2)-.06)/.47,2)-ny*ny*.85);
+                double blue=Math.Exp(-Math.Pow((nx-.42)/.65,2)-Math.Pow((ny+.45)/.72,2));
+                double cloud=Math.Pow(Math.Max(0,f-.24),1.7);
+                double dust=SparkNoise(x+y*Width,114)*1.5;
+                int p=y*data.Stride+x*4;
+                pixels[p]=(byte)Math.Min(255,10+cloud*(38*ribbon+100*blue)+dust);
+                pixels[p+1]=(byte)Math.Min(255,5+cloud*(25*ribbon+32*blue)+dust);
+                pixels[p+2]=(byte)Math.Min(255,4+cloud*(125*ribbon+32*blue)+dust);
+                pixels[p+3]=255;
+            }
+        Marshal.Copy(pixels,0,data.Scan0,pixels.Length);
+        image.UnlockBits(data);
+        return image;
+    }
+
+    private static PointF NebulaParticle(int i,double time,float tx,float ty)
+    {
+        double open=Ease01((time-.10)/.85),collapse=Ease01((time-1.22)/1.7);
+        double angle=SparkNoise(i,121)*Math.PI*2+time*.18;
+        double radius=Math.Sqrt(SparkNoise(i,122));
+        double width=25+470*open;
+        double px=Math.Cos(angle)*radius*width;
+        double py=Math.Sin(angle)*radius*width*.46;
+        py+=65*Math.Sin(px/180.0)+35*(SparkNoise(i,123)-.5);
+        double twist=collapse*1.5,c=Math.Cos(twist),s=Math.Sin(twist);
+        double depth=.55+.7*SparkNoise(i,124);
+        return new PointF((float)((510+(px*c-py*s)*depth)*(1-collapse)+tx*collapse),
+            (float)((865+(px*s+py*c)*depth)*(1-collapse)+ty*collapse));
+    }
+
+    private static void DrawNebulaIntro(Graphics g,Model model,FrameState state,double time,Bitmap background)
+    {
+        // Reveal the chart under the converging particles before the first quote moves.
+        // The default nebula variant retains its original opaque background.
+        if (model.ReadableChartMotion)
+        {
+            double cover = 1-Ease01((time-2.35)/.65);
+            using (Brush curtain = new SolidBrush(Color.FromArgb((int)(255*cover),5,9,20)))
+                g.FillRectangle(curtain,0,0,Width,Height);
+        }
+        else g.DrawImageUnscaled(background,0,0);
+        DrawStarField(g,time,.28);
+        float tx=X(MonthCoordinate(state.Head),state),ty=Y(state.HeadClose,state);
+        double collapse=Ease01((time-1.22)/1.7);
+        for(int i=0;i<2400;i++)
+        {
+            PointF p=NebulaParticle(i,time,tx,ty),tail=NebulaParticle(i,Math.Max(0,time-.022),tx,ty);
+            double depth=SparkNoise(i,125),fade=(.35+.65*depth)*(1-.92*collapse);
+            Color tint=i%5<2?Color.FromArgb(162,178,255):Color.FromArgb(255,229,190);
+            float size=(float)(.65+1.5*depth);
+            if(collapse>.02)
+                using(Pen trail=new Pen(Color.FromArgb((int)(100*fade),tint),size*.65f))
+                    g.DrawLine(trail,tail.X,tail.Y,p.X,p.Y);
+            using(Brush dust=new SolidBrush(Color.FromArgb((int)(230*fade),tint)))
+                g.FillEllipse(dust,p.X,p.Y,size,size);
+            if(i%47==0)
+                using(Brush glow=new SolidBrush(Color.FromArgb((int)(28*fade),tint)))
+                    g.FillEllipse(glow,p.X-5,p.Y-5,10,10);
+        }
+        double pulse=(1-Ease01(time/.65))*.95+Ease01((time-1.65)/1.25);
+        // The moving light, rather than a solid sphere, becomes the first real quote.
+        float cx=(float)(510*(1-collapse)+tx*collapse),cy=(float)(865*(1-collapse)+ty*collapse);
+        DrawLensGlow(g,cx,cy,pulse,Color.FromArgb(255,225,177));
+        double fadeText=Ease01(time/.15)*(1-Ease01((time-1.45)/.7));
+        using(Font title=new Font("Microsoft YaHei",48,FontStyle.Regular,GraphicsUnit.Pixel))
+        using(Font subtitle=new Font("Microsoft YaHei",31,FontStyle.Regular,GraphicsUnit.Pixel))
+        using(Brush white=new SolidBrush(Color.FromArgb((int)(235*fadeText),255,240,209)))
+        using(Brush gray=new SolidBrush(Color.FromArgb((int)(180*fadeText),181,184,199)))
+        using(StringFormat center=new StringFormat { Alignment=StringAlignment.Center })
+        {
+            DrawFit(g,model.InstrumentLabel,title,white,new RectangleF(96,430,804,80),center);
+            DrawFit(g,"穿越涨跌的星河",subtitle,gray,new RectangleF(96,515,804,58),center);
+            DrawFit(g,model.IntroQuestion,subtitle,white,new RectangleF(96,1215,804,90),center);
+        }
+    }
+
+    private static void DrawNebulaHead(Graphics g,Model model,FrameState state,double time)
+    {
+        GraphicsState saved=g.Save();
+        if (model.ReadableChartMotion)
+            g.SetClip(new RectangleF(PlotLeft,PlotTop,PlotRight-PlotLeft,PlotBottom-PlotTop));
+        float x=X(MonthCoordinate(state.Head),state),y=Y(state.HeadClose,state);
+        ImpactCue cue=model.Impacts.LastOrDefault(c=>c.Time<=time);
+        double age=cue==null?99:time-cue.Time;
+        double burst=age<1.6?Math.Sin(Math.PI*age/1.6):0;
+        Color tint=cue!=null&&cue.Down&&age<1.6?Color.FromArgb(143,209,235):Color.FromArgb(255,224,169);
+        for(int i=0;i<210;i++)
+        {
+            double a=SparkNoise(i,131)*Math.PI*2+time*.25;
+            double r=(9+SparkNoise(i,132)*65)*(1+2.3*burst)*(model.ReadableChartMotion?.65:1);
+            float px=x+(float)(Math.Cos(a)*r),py=y+(float)(Math.Sin(a)*r*.5);
+            int alpha=(int)((30+120*SparkNoise(i,133))*(.45+.55*burst));
+            float size=(float)(.6+1.3*SparkNoise(i,134));
+            using(Brush b=new SolidBrush(Color.FromArgb(alpha,tint)))g.FillEllipse(b,px,py,size,size);
+        }
+        DrawLensGlow(g,x,y,model.ReadableChartMotion?.35+.35*burst:.78+.22*burst,tint);
+        using(Brush b=new SolidBrush(Color.FromArgb(255,255,247,229)))g.FillEllipse(b,x-3,y-3,6,6);
+        g.Restore(saved);
+    }
+
+    private static void DrawOrb(Graphics g, float x, float y, float radius, double opacity, bool blue)
+    {
+        int r=blue?116:255, green=blue?187:214, b=blue?255:146;
+        opacity=Math.Max(0,Math.Min(1,opacity));
+        for(int i=64;i>0;i--)
+        {
+            float halo=radius*(1+i*.0475f);
+            using(Brush light=new SolidBrush(Color.FromArgb((int)Math.Round(opacity),r,green,b)))
+                g.FillEllipse(light,x-halo,y-halo,2*halo,2*halo);
+        }
+        // Nested, displaced illuminated discs create a shaded sphere rather than a flat dot.
+        for(int i=128;i>0;i--)
+        {
+            float q=i/128f, size=radius*q;
+            float ox=x-radius*(1-q)*.36f, oy=y-radius*(1-q)*.38f;
+            double shade=.24+.76*Math.Sqrt(1-q*q);
+            using(Brush surface=new SolidBrush(Color.FromArgb((int)(255*opacity),
+                (int)(r*shade),(int)(green*shade),(int)(b*shade))))
+                g.FillEllipse(surface,ox-size,oy-size,2*size,2*size);
+        }
+        using(Pen rim=new Pen(Color.FromArgb((int)(180*opacity),r,green,b),Math.Max(1,radius*.025f)))
+            g.DrawEllipse(rim,x-radius,y-radius,2*radius,2*radius);
+        float glint=Math.Max(1.6f,radius*.13f);
+        using(Brush hot=new SolidBrush(Color.FromArgb((int)(210*opacity),255,247,225)))
+            g.FillEllipse(hot,x-radius*.34f-glint,y-radius*.36f-glint,2*glint,2*glint);
+    }
+
+    private static PointF PlanetParticle(int i, double scatter, double converge, float tx, float ty, double time)
+    {
+        double theta=SparkNoise(i,81)*Math.PI*2+time*.48;
+        double z=2*SparkNoise(i,82)-1, equator=Math.Sqrt(1-z*z);
+        double radius=105+(220+400*SparkNoise(i,83))*scatter;
+        double perspective=1/(1-z*.30);
+        double x=Math.Cos(theta)*equator*radius*perspective;
+        double y=(Math.Sin(theta)*equator*.66+z*.36)*radius*perspective;
+        // Curving flight collapses towards the first real quote without drawing future prices.
+        double spin=converge*2.4, c=Math.Cos(spin), s=Math.Sin(spin);
+        return new PointF((float)((498+(x*c-y*s))*(1-converge)+tx*converge),
+            (float)((865+(x*s+y*c))*(1-converge)+ty*converge));
+    }
+
+    private static void DrawPlanetaryIntro(Graphics g, Model model, FrameState state, double time)
+    {
+        double reveal=Ease01((time-2.65)/.35);
+        using(Brush black=new SolidBrush(Color.FromArgb((int)(255*(1-reveal)),3,6,15)))
+            g.FillRectangle(black,0,0,Width,Height);
+        DrawStarField(g,time,.5*(1-reveal));
+        double scatter=Ease01((time-.28)/.85);
+        double converge=Ease01((time-1.4)/1.6);
+        float tx=X(MonthCoordinate(state.Head),state),ty=Y(state.HeadClose,state);
+        for(int i=0;i<1150;i++)
+        {
+            PointF p=PlanetParticle(i,scatter,converge,tx,ty,time);
+            double before=Math.Max(0,time-.025);
+            PointF tail=PlanetParticle(i,Ease01((before-.28)/.85),Ease01((before-1.4)/1.6),tx,ty,before);
+            double depth=.3+.7*SparkNoise(i,84);
+            double alpha=(.3+.7*scatter)*(1-.85*reveal)*depth;
+            bool blue=i%3==0;
+            Color color=blue?Color.FromArgb(125,195,255):Color.FromArgb(255,216,147);
+            using(Pen streak=new Pen(Color.FromArgb((int)(140*alpha),color),.7f+(float)depth))
+                g.DrawLine(streak,tail.X,tail.Y,p.X,p.Y);
+            float size=(float)(.9+2.3*depth);
+            using(Brush glow=new SolidBrush(Color.FromArgb((int)(15*alpha),color)))
+                g.FillEllipse(glow,p.X-size*3,p.Y-size*3,size*6,size*6);
+            using(Brush dot=new SolidBrush(Color.FromArgb((int)(235*alpha),color)))
+                g.FillEllipse(dot,p.X-size/2,p.Y-size/2,size,size);
+        }
+        // Larger satellite bodies share the cloud's dispersal and gravitational return.
+        for(int i=0;i<14;i++)
+        {
+            PointF p=PlanetParticle(i*79+4,scatter,converge,tx,ty,time);
+            float size=(float)((7+16*SparkNoise(i,86))*(1-converge)+2);
+            DrawOrb(g,p.X,p.Y,size,(1-reveal)*.95,i%3==0);
+        }
+        if(time<1.05) DrawOrb(g,498,865,(float)(88*(1-scatter)+4),1-Ease01((time-.3)/.65),false);
+        double born=Ease01((time-2.05)/.9);
+        PointF core=new PointF((float)(498*(1-converge)+tx*converge),(float)(865*(1-converge)+ty*converge));
+        DrawLensGlow(g,core.X,core.Y,born,Color.FromArgb(255,222,166));
+        DrawOrb(g,core.X,core.Y,(float)(4+8*born),born,false);
+        double textFade=(1-Ease01((time-1.45)/.7))*Ease01(time/.2);
+        using(Font title=new Font("Microsoft YaHei",47,FontStyle.Regular,GraphicsUnit.Pixel))
+        using(Font question=new Font("Microsoft YaHei",39,FontStyle.Regular,GraphicsUnit.Pixel))
+        using(Brush ink=new SolidBrush(Color.FromArgb((int)(235*textFade),240,242,243)))
+        using(Brush gold=new SolidBrush(Color.FromArgb((int)(220*textFade),215,189,128)))
+        using(StringFormat center=new StringFormat { Alignment=StringAlignment.Center })
+        {
+            DrawFit(g,model.InstrumentLabel,title,ink,new RectangleF(96,395,804,75),center);
+            DrawFit(g,model.IntroQuestion,question,gold,new RectangleF(96,1290,804,100),center);
+        }
+    }
+
+    private static void DrawPlanetaryHead(Graphics g, Model model, FrameState state, double time)
+    {
+        float x=X(MonthCoordinate(state.Head),state),y=Y(state.HeadClose,state);
+        ImpactCue cue=model.Impacts.LastOrDefault(c=>c.Time<=time);
+        double age=cue==null?99:time-cue.Time;
+        double burst=age<1.6?Math.Sin(Math.PI*age/1.6):0;
+        // Historical line remains fixed; only decorative orbital dust opens and contracts.
+        for(int i=0;i<160;i++)
+        {
+            double angle=SparkNoise(i,91)*Math.PI*2+time*(.65+SparkNoise(i,92));
+            double radius=14+SparkNoise(i,93)*(35+170*burst);
+            double z=Math.Sin(angle);
+            float px=x+(float)(Math.Cos(angle)*radius),py=y+(float)(z*radius*.38);
+            double fade=(.3+.7*SparkNoise(i,94))*(.45+.55*burst);
+            using(Brush dust=new SolidBrush(Color.FromArgb((int)(180*fade),255,221,158)))
+                g.FillEllipse(dust,px,py,1.4f+(float)(z+1),1.4f+(float)(z+1));
+        }
+        DrawLensGlow(g,x,y,.55+.4*burst,Color.FromArgb(255,222,166));
+        DrawOrb(g,x,y,(float)(11+3*burst),1,false);
+    }
+
+    // Decorative depth field. Positions are independent of prices and global-frame deterministic.
+    private static void DrawStarField(Graphics g, double time, double strength)
+    {
+        for (int i = 0; i < 220; i++)
+        {
+            double depth = 0.25 + 0.75 * SparkNoise(i, 61);
+            float x = (float)((SparkNoise(i, 62) * 1180 + time * (2 + depth * 4)) % 1180 - 50);
+            float y = (float)(220 + SparkNoise(i, 63) * 1320 + 9 * Math.Sin(time * 0.2 + i));
+            float radius = (float)(0.7 + depth * 1.8);
+            int alpha = (int)(strength * (50 + 120 * depth) * (0.6 + 0.4 * Math.Sin(time + i) * Math.Sin(time + i)));
+            using (Brush dot = new SolidBrush(Color.FromArgb(alpha, i % 4 == 0 ? 215 : 148, i % 4 == 0 ? 189 : 183, i % 4 == 0 ? 128 : 225)))
+                g.FillEllipse(dot, x, y, radius * 2, radius * 2);
+        }
+    }
+
+    private static void DrawLensGlow(Graphics g, float x, float y, double power, Color color)
+    {
+        power = Math.Max(0, Math.Min(1, power));
+        for (int i = 32; i > 0; i--)
+        {
+            float radius = 5 + i * 3.6f;
+            using (Brush glow = new SolidBrush(Color.FromArgb((int)(power * (2 + (32-i)*0.13)), color)))
+                g.FillEllipse(glow, x-radius, y-radius, radius*2, radius*2);
+        }
+        for (int pass = 0; pass < 3; pass++)
+            for (int i = -32; i < 32; i++)
+            {
+                double falloff = Math.Exp(-Math.Pow(i/12.0,2));
+                using (Pen flare = new Pen(Color.FromArgb((int)(power * falloff * (pass==2?190:25)), color),pass==2?1.6f:12-pass*7))
+                    g.DrawLine(flare,x+i*5,y,x+(i+1)*5,y);
+            }
+        using (Brush core = new SolidBrush(Color.FromArgb((int)(235*power),255,244,220)))
+            g.FillEllipse(core,x-4,y-4,8,8);
+    }
+
+    private static void DrawStellarIntro(Graphics g, Model model, FrameState state, double time)
+    {
+        double reveal = Ease01((time - 2.3) / 0.7);
+        using (Brush bg = new SolidBrush(Color.FromArgb((int)(255*(1-reveal)),5,9,20)))
+            g.FillRectangle(bg,0,0,Width,Height);
+        DrawStarField(g,time,(1-reveal)*0.85);
+        double converge = Ease01((time-1.8)/1.2);
+        float cx = (float)(498 + (X(MonthCoordinate(state.Head),state)-498)*converge);
+        float cy = (float)(930 + (Y(state.HeadClose,state)-930)*converge);
+        double birth = Ease01(time/.4);
+        for (int i=0;i<640;i++)
+        {
+            double depth=.25+.75*SparkNoise(i,71);
+            double angle=SparkNoise(i,72)*Math.PI*2 + time*(.25+depth*.35);
+            double radius=(80+560*SparkNoise(i,73))*(.7+.3*birth)*(1-.98*converge);
+            float x=cx+(float)(Math.Cos(angle)*radius);
+            float y=cy+(float)(Math.Sin(angle)*radius*.7);
+            float size=(float)(.8+2.3*depth);
+            // Leave the title's centre visually calm; the light trail surrounds it.
+            double quiet = x>95 && x<905 && y>650 && y<850 ? .15 : 1;
+            int alpha=(int)(birth*(1-reveal)*(90+145*depth)*quiet);
+            using(Brush dot=new SolidBrush(Color.FromArgb(alpha,i%3==0?255:145,i%3==0?221:183,i%3==0?155:238)))
+                g.FillEllipse(dot,x,y,size,size);
+        }
+        double textOpacity=Ease01(time/.35)*(1-Ease01((time-2.15)/.65));
+        using(Font title=new Font("Microsoft YaHei",86,FontStyle.Bold,GraphicsUnit.Pixel))
+        using(Font sub=new Font("Microsoft YaHei",44,FontStyle.Bold,GraphicsUnit.Pixel))
+        using(Font small=new Font("Microsoft YaHei",27,FontStyle.Regular,GraphicsUnit.Pixel))
+        using(Brush white=new SolidBrush(Color.FromArgb((int)(255*textOpacity),240,242,243)))
+        using(Brush gold=new SolidBrush(Color.FromArgb((int)(255*textOpacity),215,189,128)))
+        using(StringFormat center=new StringFormat { Alignment=StringAlignment.Center })
+        {
+            DrawFit(g,model.InstrumentLabel,title,white,new RectangleF(96,650,804,130),center);
+            DrawFit(g,String.IsNullOrWhiteSpace(model.IntroQuestion)?model.Subtitle:model.IntroQuestion,sub,gold,new RectangleF(96,790,804,90),center);
+            DrawFit(g,model.RangeLabel,small,white,new RectangleF(96,1140,804,55),center);
+        }
+        DrawLensGlow(g,cx,cy,birth*(1-reveal),Color.FromArgb(255,213,137));
+    }
+
+    private static void DrawStellarTransition(Graphics g, Model model, FrameState state, double time)
+    {
+        Event ev=model.Events.LastOrDefault(e=>e.Major && e.Arrival<=time);
+        double age=ev==null?99:time-ev.Arrival;
+        if(age<0 || age>1.05) return;
+        double fade=Math.Pow(1-age/1.05,2);
+        float x=X(ev.Month,state),y=Y(ev.Close,state);
+        GraphicsState saved=g.Save();
+        g.SetClip(new RectangleF(PlotLeft,PlotTop,PlotRight-PlotLeft,PlotBottom-PlotTop));
+        DrawLensGlow(g,x,y,fade,Color.FromArgb(255,213,137));
+        g.Restore(saved);
+        // Sweep through the card border, keeping all quote text and the price geometry still.
+        float sweep=(float)(96+804*Ease01(age/.65));
+        for(int i=0;i<18;i++)
+        {
+            float px=sweep-i*8;
+            if(px<96 || px>900) continue;
+            using(Pen ray=new Pen(Color.FromArgb((int)(200*fade*(1-i/18.0)),255,232,174),3))
+                g.DrawLine(ray,px,1185,Math.Min(900,px+8),1185);
+        }
+    }
+
     private static void DrawIntro(Graphics g, Model model, double time)
     {
         float fade = (float)Math.Min(1, (3-time)/0.5);
@@ -1047,10 +1461,10 @@ public static class ReusableClassicRenderer
         using (Brush gold = new SolidBrush(Color.FromArgb(alpha,215,189,128)))
         using (Brush white = new SolidBrush(Color.FromArgb(alpha,240,242,243)))
         {
-            g.FillRectangle(gold,85,650,910*entry,4);
-            DrawFit(g,model.Title,title,white,new RectangleF(85,740+45*(1-entry),910,160),null);
-            DrawFit(g,model.Subtitle,sub,gold,new RectangleF(85,925,910,90),null);
-            DrawFit(g,model.RangeLabel,sub,white,new RectangleF(85,1080,910,90),null);
+            g.FillRectangle(gold,96,620,804*entry,4);
+            DrawFit(g,model.Title,title,white,new RectangleF(96,710+45*(1-entry),804,160),null);
+            DrawFit(g,model.Subtitle,sub,gold,new RectangleF(96,895,804,90),null);
+            DrawFit(g,model.RangeLabel,sub,white,new RectangleF(96,1050,804,90),null);
         }
     }
 
@@ -1062,7 +1476,7 @@ public static class ReusableClassicRenderer
         using (Brush white = new SolidBrush(Color.FromArgb(alpha, 255, 255, 255)))
         using (StringFormat centered = new StringFormat { Alignment = StringAlignment.Center })
         {
-            RectangleF area = new RectangleF(85f, 1438f - 18f * (1f - entrance), 910f, 142f);
+            RectangleF area = new RectangleF(96f, 1190f - 18f * (1f - entrance), 804f, 142f);
             RectangleF shade = new RectangleF(area.X + 2f, area.Y + 4f, area.Width, area.Height);
             DrawFit(g, model.Ending, font, shadow, shade, centered);
             DrawFit(g, model.Ending, font, white, area, centered);
@@ -1090,12 +1504,20 @@ public static class ReusableClassicRenderer
 
     private static void DrawFooter(Graphics g, Model model)
     {
+        if(model.PlanetaryMotion && !model.ReadableChartMotion)
+        {
+            using(Font font=new Font("Microsoft YaHei",23,FontStyle.Regular,GraphicsUnit.Pixel))
+            using(Brush ink=new SolidBrush(Color.FromArgb(105,131,146,167)))
+            using(StringFormat center=new StringFormat { Alignment=StringAlignment.Center })
+                DrawFit(g,model.RangeLabel,font,ink,new RectangleF(96,1490,804,40),center);
+            return;
+        }
         using (Font font = new Font("Microsoft YaHei", 25f, FontStyle.Regular, GraphicsUnit.Pixel))
         using (Brush brush = new SolidBrush(Color.FromArgb(190, TextGray)))
         using (StringFormat center = new StringFormat { Alignment = StringAlignment.Center })
         {
-            DrawFit(g, model.RangeLabel, font, brush, new RectangleF(85f, 1595f, 910f, 44f), center);
-            DrawFit(g, model.Source, font, brush, new RectangleF(85f, 1639f, 910f, 44f), center);
+            DrawFit(g, model.RangeLabel, font, brush, new RectangleF(96f, 1344f, 804f, 36f), center);
+            DrawFit(g, model.Source, font, brush, new RectangleF(96f, 1380f, 804f, 36f), center);
         }
     }
 
